@@ -1,0 +1,38 @@
+{
+  "calibrated_at": "2026-04-08T09:34:50.349460",
+  "frames_used": 1227,
+  "stability_score": 70.0,
+  "metrics": {
+    "head_forward": {
+      "mean": 0.01025,
+      "std": 0.01206,
+      "warn_moderate": 0.02833,
+      "warn_bad": 0.04642
+    },
+    "shoulder_asym": {
+      "mean": 0.00637,
+      "std": 0.00493,
+      "warn_moderate": 0.01377,
+      "warn_bad": 0.02116
+    },
+    "spinal_offset": {
+      "mean": 0.02396,
+      "std": 0.0063,
+      "warn_moderate": 0.03341,
+      "warn_bad": 0.04287
+    },
+    "neck_angle_deg": {
+      "mean": 2.16183,
+      "std": 1.69793,
+      "warn_moderate": 4.70872,
+      "warn_bad": 7.25562
+    },
+    "torso_lean_deg": {
+      "mean": 1.84415,
+      "std": 0.49463,
+      "warn_moderate": 2.5861,
+      "warn_bad": 3.32805
+    }
+  },
+  "notes": "warn_moderate = 1.5\u03c3 above personal mean  (first gentle nudge threshold). warn_bad = 3.0\u03c3 above personal mean (bad-posture classification threshold). Load this in realtime_posture.py to personalise alerts."
+}
