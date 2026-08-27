@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SitApp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #fb8500 0%, #f59e0b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: white;
+            border-radius: 24px;
+            padding: 48px 40px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+        }
+        .logo {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 800;
+            color: #fb8500;
+            margin-bottom: 8px;
+            font-family: "Poppins", -apple-system, sans-serif;
+        }
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            font-size: 15px;
+            margin-bottom: 32px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: #fb8500;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #fb8500 0%, #f59e0b 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(251,133,0,0.3);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .error.show {
+            display: block;
+        }
+        .demo-note {
+            text-align: center;
+            font-size: 13px;
+            color: #9ca3af;
+            margin-top: 16px;
+        }
+        .demo-note span {
+            color: #fb8500;
+            font-weight: 600;
+        }
+        .droid-icon {
+            text-align: center;
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 32px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="droid-icon">🤖</div>
+        <div class="logo">SitApp</div>
+        <p class="subtitle">Your posture, perfected</p>
+        
+        <div id="errorMessage" class="error"></div>
+        
+        <form id="loginForm" method="POST" action="/login">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn-primary">🚀 Get Started</button>
+        </form>
+        
+        <p class="demo-note">
+            💡 New user? Just sign in — we'll create your account automatically<br>
+            <span>First time? You'll calibrate your posture next</span>
+        </p>
+    </div>
+
+    <script>
+        // Show error if present
+        const error = new URLSearchParams(window.location.search).get('error');
+        if (error) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = decodeURIComponent(error);
+            el.classList.add('show');
+        }
+
+        // Form validation
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                e.preventDefault();
+                const el = document.getElementById('errorMessage');
+                el.textContent = 'Please fill in all fields';
+                el.classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>

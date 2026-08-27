@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SitApp</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f9fafb;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fb8500;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .user-badge {
+            background: #f3f4f6;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 14px;
+            color: #4b5563;
+        }
+        .btn-logout {
+            padding: 8px 18px;
+            background: #fee2e2;
+            color: #991b1b;
+            border: none;
+            border-radius: 999px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .btn-logout:hover {
+            background: #fecaca;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .card h3 {
+            font-size: 16px;
+            color: #6b7280;
+            font-weight: 600;
+            margin-bottom: 16px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        
+        .status-display {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .status-badge.good { background: #d1fae5; color: #065f46; }
+        .status-badge.moderate { background: #fef3c7; color: #92400e; }
+        .status-badge.bad { background: #fee2e2; color: #991b1b; }
+        .status-badge.unknown { background: #f3f4f6; color: #4b5563; }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin: 12px 0;
+        }
+        .metric-card {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+        .metric-card .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #9ca3af;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .metric-card .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-top: 2px;
+        }
+        .metric-card .bar {
+            height: 4px;
+            border-radius: 2px;
+            background: #e5e7eb;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .metric-card .bar .fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+        
+        .btn-primary {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #fb8500 0%, #f59e0b 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(251,133,0,0.3);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            padding: 12px 28px;
+            background: #f3f4f6;
+            color: #4b5563;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .alert-banner {
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-top: 12px;
+            font-weight: 600;
+            display: none;
+        }
+        .alert-banner.bad {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .alert-banner.moderate {
+            display: block;
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .connection-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+        .connection-status .dot.connected { background: #10b981; }
+        
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        .btn-row .btn-primary { flex: 2; }
+        .btn-row .btn-secondary { flex: 1; }
+        
+        .video-preview {
+            width: 100%;
+            border-radius: 12px;
+            background: #1f2937;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            margin-bottom: 12px;
+        }
+        
+        .ad-placeholder {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #f59e0b;
+        }
+        .ad-placeholder .ad-icon { font-size: 48px; margin-bottom: 12px; }
+        .ad-placeholder .ad-title { font-size: 20px; font-weight: 700; color: #92400e; }
+        .ad-placeholder .ad-sub { font-size: 14px; color: #78350f; margin-top: 4px; }
+        
+        .timer-display {
+            font-size: 14px;
+            font-family: monospace;
+            color: #6b7280;
+        }
+        
+        @media (max-width: 600px) {
+            .header { flex-direction: column; align-items: stretch; text-align: center; }
+            .header-right { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <span class="logo">🤖 SitApp</span>
+            <div class="header-right">
+                <span class="user-badge">👤 {{ username }}</span>
+                <span class="connection-status">
+                    <span class="dot" id="connectionDot"></span>
+                    <span id="connectionText">Connecting...</span>
+                </span>
+                <button class="btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="grid">
+            <!-- Main Posture Detection -->
+            <div class="card">
+                <h3>📊 Live Posture Detection</h3>
+                
+                <img id="videoPreview" class="video-preview" alt="Live camera preview">
+                
+                <div class="status-display">
+                    <span class="status-badge unknown" id="statusBadge">Not started</span>
+                    <span class="timer-display" id="timerDisplay">00:00</span>
+                </div>
+
+                <div class="metrics-grid" id="metricsGrid">
+                    <div class="metric-card">
+                        <div class="label">Head Forward</div>
+                        <div class="value" id="metric-head_forward">--</div>
+                        <div class="bar"><div class="fill" id="bar-head_forward" style="width:0%;background:#10b981;"></div></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Shoulder Asym</div>
+                        <div class="value" id="metric-shoulder_asym">--</div>
+                        <div class="bar"><div class="fill" id="bar-shoulder_asym" style="width:0%;background:#10b981;"></div></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Spinal Offset</div>
+                        <div class="value" id="metric-spinal_offset">--</div>
+                        <div class="bar"><div class="fill" id="bar-spinal_offset" style="width:0%;background:#10b981;"></div></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Neck Angle</div>
+                        <div class="value" id="metric-neck_angle_deg">--°</div>
+                        <div class="bar"><div class="fill" id="bar-neck_angle_deg" style="width:0%;background:#10b981;"></div></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="label">Torso Lean</div>
+                        <div class="value" id="metric-torso_lean_deg">--°</div>
+                        <div class="bar"><div class="fill" id="bar-torso_lean_deg" style="width:0%;background:#10b981;"></div></div>
+                    </div>
+                </div>
+
+                <div id="alertBanner" class="alert-banner"></div>
+
+                <div class="btn-row">
+                    <button id="startBtn" class="btn-primary">🎥 Start Detection</button>
+                    <button id="stopBtn" class="btn-secondary" style="display:none;">⏹ Stop</button>
+                </div>
+            </div>
+
+            <!-- Ad / Info Panel -->
+            <div class="card">
+                <h3>📈 Your Posture Stats</h3>
+                
+                <div class="ad-placeholder">
+                    <div class="ad-icon">🧘</div>
+                    <div class="ad-title">Premium Posture Coaching</div>
+                    <div class="ad-sub">Get personalized feedback, daily streaks, and more with SitApp Pro</div>
+                    <br>
+                    <button class="btn-primary" style="max-width:200px;margin:0 auto;" onclick="alert('🚀 Upgrade to Pro - Coming soon!')">Upgrade to Pro</button>
+                </div>
+                
+                <div style="margin-top:16px;padding:16px;background:#f9fafb;border-radius:12px;">
+                    <h4 style="font-size:14px;color:#6b7280;margin-bottom:8px;">Session Summary</h4>
+                    <div id="sessionSummary">
+                        <p style="font-size:14px;color:#4b5563;">Start a session to see your stats here.</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top:12px;padding:12px 16px;background:#fef3c7;border-radius:12px;font-size:13px;color:#92400e;">
+                    💡 Tip: Sit with your back straight, feet flat on the floor, and screen at eye level.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── State ──────────────────────────────────────────────
+        let isRunning = false;
+        let sessionStart = null;
+        let timerInterval = null;
+        let frameCount = 0;
+        let alertTimeout = null;
+
+        // ── DOM Elements ──────────────────────────────────────
+        const video = document.getElementById('videoPreview');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusBadge = document.getElementById('statusBadge');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const alertBanner = document.getElementById('alertBanner');
+        const connectionDot = document.getElementById('connectionDot');
+        const connectionText = document.getElementById('connectionText');
+
+        const metricEls = {};
+        const barEls = {};
+        ['head_forward', 'shoulder_asym', 'spinal_offset', 'neck_angle_deg', 'torso_lean_deg'].forEach(m => {
+            metricEls[m] = document.getElementById(`metric-${m}`);
+            barEls[m] = document.getElementById(`bar-${m}`);
+        });
+
+        // ── Thresholds (will be updated from server) ──────────
+        let THRESH = {
+            head_forward: { moderate: 0.03, bad: 0.06 },
+            shoulder_asym: { moderate: 0.03, bad: 0.06 },
+            spinal_offset: { moderate: 0.04, bad: 0.08 },
+            neck_angle_deg: { moderate: 15, bad: 25 },
+            torso_lean_deg: { moderate: 10, bad: 18 }
+        };
+
+        // ── Socket.IO ──────────────────────────────────────────
+        const socket = io();
+
+        socket.on('connect', () => {
+            connectionDot.className = 'dot connected';
+            connectionText.textContent = 'Connected';
+            console.log('✅ Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            connectionDot.className = 'dot';
+            connectionText.textContent = 'Disconnected';
+            console.log('❌ Disconnected from server');
+        });
+
+        socket.on('posture_update', (data) => {
+            if (data.frame) {
+                video.src = `data:image/jpeg;base64,${data.frame}`;
+            }
+            // Update thresholds if provided
+            if (data.thresholds) {
+                THRESH = data.thresholds;
+            }
+
+            if (data.person_detected) {
+                const clsName = data.class_name.toLowerCase().replace(' ', '-');
+                statusBadge.className = `status-badge ${clsName}`;
+                statusBadge.textContent = data.class_name;
+                updateMetrics(data.metrics);
+                showAlert(data.alert);
+                frameCount++;
+            } else {
+                statusBadge.className = 'status-badge unknown';
+                statusBadge.textContent = 'No person detected';
+            }
+        });
+
+        socket.on('error', (data) => {
+            alert(`Error: ${data.message}`);
+        });
+
+        socket.on('detection_stopped', () => {
+            stopDetection();
+        });
+
+        // ── Webcam ─────────────────────────────────────────────
+        async function startWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                await video.play();
+                return true;
+            } catch (err) {
+                console.error('Webcam error:', err);
+                statusBadge.textContent = '❌ No webcam';
+                return false;
+            }
+        }
+
+        function stopWebcam() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        }
+
+        // ── Metrics Display ────────────────────────────────────
+        function updateMetrics(metrics) {
+            if (!metrics) return;
+
+            Object.keys(metrics).forEach(key => {
+                const val = metrics[key];
+                const el = metricEls[key];
+                const bar = barEls[key];
+                if (el) {
+                    const unit = key.includes('deg') ? '°' : '';
+                    el.textContent = `${val.toFixed(3)}${unit}`;
+                }
+                if (bar && THRESH[key]) {
+                    const absVal = Math.abs(val);
+                    const max = THRESH[key].bad || 0.1;
+                    const pct = Math.min(100, (absVal / max) * 100);
+                    bar.style.width = `${pct}%`;
+
+                    if (absVal > THRESH[key].bad) {
+                        bar.style.background = '#ef4444';
+                    } else if (absVal > THRESH[key].moderate) {
+                        bar.style.background = '#f59e0b';
+                    } else {
+                        bar.style.background = '#10b981';
+                    }
+                }
+            });
+        }
+
+        function showAlert(alert) {
+            if (!alert) {
+                alertBanner.className = 'alert-banner';
+                alertBanner.style.display = 'none';
+                return;
+            }
+            alertBanner.style.display = 'block';
+            if (alert.type === 'bad') {
+                alertBanner.className = 'alert-banner bad';
+                alertBanner.innerHTML = `🔴 ${alert.message} — ${alert.tip || 'Fix your posture'}`;
+            } else if (alert.type === 'moderate') {
+                alertBanner.className = 'alert-banner moderate';
+                alertBanner.textContent = `🟡 ${alert.message}`;
+            }
+        }
+
+        // ── Timer ─────────────────────────────────────────────
+        function startTimer() {
+            sessionStart = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - sessionStart) / 1000;
+                const mins = Math.floor(elapsed / 60);
+                const secs = Math.floor(elapsed % 60);
+                timerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        // ── Detection Control ──────────────────────────────────
+        function startDetection() {
+            isRunning = true;
+            frameCount = 0;
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-flex';
+            statusBadge.className = 'status-badge unknown';
+            statusBadge.textContent = 'Starting...';
+            alertBanner.style.display = 'none';
+
+            // The backend opens the webcam with OpenCV. Release the browser camera first.
+            stopWebcam();
+            socket.emit('start_detection');
+            startTimer();
+        }
+
+        function stopDetection() {
+            isRunning = false;
+            startBtn.style.display = 'inline-flex';
+            stopBtn.style.display = 'none';
+            statusBadge.className = 'status-badge unknown';
+            statusBadge.textContent = 'Stopped';
+            stopTimer();
+            timerDisplay.textContent = '00:00';
+            
+            // Update session summary
+            document.getElementById('sessionSummary').innerHTML = `
+                <p style="font-size:14px;color:#4b5563;">
+                    ✅ Session ended<br>
+                    <span style="font-size:12px;color:#6b7280;">${frameCount} frames processed</span>
+                </p>
+            `;
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = '/logout';
+            }
+        }
+
+        // ── Event Listeners ───────────────────────────────────
+        startBtn.addEventListener('click', startDetection);
+        stopBtn.addEventListener('click', stopDetection);
+
+        // ── Init ──────────────────────────────────────────────
+        (async function init() {
+            // Check if baseline exists
+            try {
+                const resp = await fetch('/api/check_baseline');
+                const data = await resp.json();
+                // Calibration is optional; the backend uses generic thresholds when skipped.
+            } catch (err) {
+                console.error('Error checking baseline:', err);
+            }
+        })();
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (isRunning) {
+                socket.emit('stop_detection');
+            }
+            socket.disconnect();
+        });
+    </script>
+</body>
+</html>
