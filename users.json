@@ -1,0 +1,12 @@
+{
+  "amh123": {
+    "password": "ce438d1d1767cc66ed65629878c11ff75a94fee2dc275316efe60c5917a44846",
+    "baseline_done": false,
+    "created_at": "2026-08-27T11:55:15.173381"
+  },
+  "user1": {
+    "password": "0b14d501a594442a01c6859541bcb3e8164d183d32937b851835442f69d5c94e",
+    "baseline_done": true,
+    "created_at": "2026-08-27T12:01:21.942502"
+  }
+}

@@ -1,38 +1,39 @@
 {
-  "calibrated_at": "2026-04-08T09:34:50.349460",
-  "frames_used": 1227,
-  "stability_score": 70.0,
+  "calibrated_at": "2026-08-27T12:02:03.974750",
+  "username": "user1",
+  "frames_used": 236,
+  "stability_score": 93,
   "metrics": {
     "head_forward": {
-      "mean": 0.01025,
-      "std": 0.01206,
-      "warn_moderate": 0.02833,
-      "warn_bad": 0.04642
+      "mean": 0.01327,
+      "std": 0.00617,
+      "warn_moderate": 0.02253,
+      "warn_bad": 0.03179
     },
     "shoulder_asym": {
-      "mean": 0.00637,
-      "std": 0.00493,
-      "warn_moderate": 0.01377,
-      "warn_bad": 0.02116
+      "mean": 0.00785,
+      "std": 0.0063,
+      "warn_moderate": 0.0173,
+      "warn_bad": 0.02676
     },
     "spinal_offset": {
-      "mean": 0.02396,
-      "std": 0.0063,
-      "warn_moderate": 0.03341,
-      "warn_bad": 0.04287
+      "mean": 0.00962,
+      "std": 0.00555,
+      "warn_moderate": 0.01795,
+      "warn_bad": 0.02627
     },
     "neck_angle_deg": {
-      "mean": 2.16183,
-      "std": 1.69793,
-      "warn_moderate": 4.70872,
-      "warn_bad": 7.25562
+      "mean": 2.18405,
+      "std": 1.0202,
+      "warn_moderate": 3.71435,
+      "warn_bad": 5.24465
     },
     "torso_lean_deg": {
-      "mean": 1.84415,
-      "std": 0.49463,
-      "warn_moderate": 2.5861,
-      "warn_bad": 3.32805
+      "mean": 0.76525,
+      "std": 0.44518,
+      "warn_moderate": 1.43301,
+      "warn_bad": 2.10077
     }
   },
-  "notes": "warn_moderate = 1.5\u03c3 above personal mean  (first gentle nudge threshold). warn_bad = 3.0\u03c3 above personal mean (bad-posture classification threshold). Load this in realtime_posture.py to personalise alerts."
+  "notes": "Personal baseline for posture detection"
 }
