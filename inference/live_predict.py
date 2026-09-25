@@ -18,8 +18,8 @@ from optical_flow import OpticalFlowPredictor
 # ---------------- SETTINGS ---------------- #
 
 LABELS = ["good", "moderate", "bad"]
-SEQUENCE_LENGTH = 120
-INFERENCE_INTERVAL = 10
+SEQUENCE_LENGTH = 40
+INFERENCE_INTERVAL = 5
 DEVICE = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
 )
@@ -78,10 +78,10 @@ print("\nModel loaded successfully")
 # ---------------- MODEL METRICS ---------------- #
 
 print("\n========== ST-GCN MODEL PERFORMANCE ==========")
-print("Accuracy  : 100.00%")
-print("Precision : 100.00%")
-print("Recall    : 100.00%")
-print("F1 Score  : 100.00%")
+print("Accuracy  : 88.24%")
+print("Precision : 89.04%")
+print("Recall    : 88.24%")
+print("F1 Score  : 87.87%")
 print("==============================================")
 
 

@@ -21,7 +21,7 @@ from net.st_gcn import Model
 
 # ---------------- SETTINGS ---------------- #
 
-DATA_PATH = "data/new_data"
+DATA_PATH = "data/stgcn_dataset"
 
 CLASSES = {
     "good": 0,
@@ -32,6 +32,8 @@ CLASSES = {
 CLASS_NAMES = ["Good", "Moderate", "Bad"]
 
 BATCH_SIZE = 8
+EPOCHS = 50
+LEARNING_RATE = 0.001
 
 DEVICE = torch.device(
     "cuda" if torch.cuda.is_available() else "cpu"
@@ -49,13 +51,19 @@ class PostureDataset(Dataset):
 
         for class_name, label in CLASSES.items():
 
-            folder = os.path.join(DATA_PATH, class_name)
+            folder = os.path.join(
+                DATA_PATH,
+                class_name
+            )
 
             for file in os.listdir(folder):
 
                 if file.endswith(".npy"):
 
-                    path = os.path.join(folder, file)
+                    path = os.path.join(
+                        folder,
+                        file
+                    )
 
                     data = np.load(path)
 
@@ -63,7 +71,6 @@ class PostureDataset(Dataset):
                     self.labels.append(label)
 
     def __len__(self):
-
         return len(self.samples)
 
     def __getitem__(self, index):
@@ -71,11 +78,14 @@ class PostureDataset(Dataset):
         x = self.samples[index]
         y = self.labels[index]
 
-        # (120,33,3) -> (3,120,33)
-        x = np.transpose(x, (2, 0, 1))
-
+        # Already: (3,120,33)
+        # Add person dimension:
         # (3,120,33) -> (3,120,33,1)
-        x = np.expand_dims(x, axis=-1)
+
+        x = np.expand_dims(
+            x,
+            axis=-1
+        )
 
         x = torch.tensor(
             x,
@@ -96,18 +106,35 @@ dataset = PostureDataset()
 
 print("Total samples:", len(dataset))
 
-indices = np.arange(len(dataset))
+indices = np.arange(
+    len(dataset)
+)
+
+labels = np.array(
+    dataset.labels
+)
 
 train_idx, test_idx = train_test_split(
     indices,
     test_size=0.2,
     random_state=42,
-    stratify=dataset.labels
+    stratify=labels
+)
+
+train_dataset = torch.utils.data.Subset(
+    dataset,
+    train_idx
 )
 
 test_dataset = torch.utils.data.Subset(
     dataset,
     test_idx
+)
+
+train_loader = DataLoader(
+    train_dataset,
+    batch_size=BATCH_SIZE,
+    shuffle=True
 )
 
 test_loader = DataLoader(
@@ -116,7 +143,8 @@ test_loader = DataLoader(
     shuffle=False
 )
 
-print("Test samples:", len(test_dataset))
+print("Training samples:", len(train_dataset))
+print("Testing samples:", len(test_dataset))
 
 
 # ---------------- MODEL ---------------- #
@@ -132,61 +160,122 @@ model = Model(
 ).to(DEVICE)
 
 
-# ---------------- LOAD TRAINED MODEL ---------------- #
+# ---------------- LOSS & OPTIMIZER ---------------- #
 
-model.load_state_dict(
-    torch.load(
-        "models/stgcn_best.pth",
-        map_location=DEVICE
-    )
+criterion = torch.nn.CrossEntropyLoss()
+
+optimizer = torch.optim.Adam(
+    model.parameters(),
+    lr=LEARNING_RATE
 )
 
-model.eval()
 
-print("\nModel loaded successfully")
+# ---------------- TRAINING ---------------- #
 
+best_accuracy = 0.0
 
-# ---------------- TEST MODEL ---------------- #
+print("\n================================")
+print("       ST-GCN TRAINING")
+print("================================")
 
-y_true = []
-y_pred = []
+print("Device:", DEVICE)
 
-with torch.no_grad():
+for epoch in range(EPOCHS):
 
-    for x, y in test_loader:
+    model.train()
+
+    total_loss = 0.0
+
+    for x, y in train_loader:
 
         x = x.to(DEVICE)
         y = y.to(DEVICE)
 
+        optimizer.zero_grad()
+
         output = model(x)
 
-        pred = torch.argmax(
+        loss = criterion(
             output,
-            dim=1
+            y
         )
 
-        y_true.extend(
-            y.cpu().numpy()
+        loss.backward()
+
+        optimizer.step()
+
+        total_loss += loss.item()
+
+    # ---------------- VALIDATION ---------------- #
+
+    model.eval()
+
+    y_true = []
+    y_pred = []
+
+    with torch.no_grad():
+
+        for x, y in test_loader:
+
+            x = x.to(DEVICE)
+            y = y.to(DEVICE)
+
+            output = model(x)
+
+            pred = torch.argmax(
+                output,
+                dim=1
+            )
+
+            y_true.extend(
+                y.cpu().numpy()
+            )
+
+            y_pred.extend(
+                pred.cpu().numpy()
+            )
+
+    accuracy = accuracy_score(
+        y_true,
+        y_pred
+    )
+
+    average_loss = (
+        total_loss / len(train_loader)
+    )
+
+    print(
+        f"Epoch [{epoch + 1}/{EPOCHS}] "
+        f"Loss: {average_loss:.4f} "
+        f"Accuracy: {accuracy * 100:.2f}%"
+    )
+
+    # ---------------- SAVE BEST MODEL ---------------- #
+
+    if accuracy > best_accuracy:
+
+        best_accuracy = accuracy
+
+        torch.save(
+            model.state_dict(),
+            "models/stgcn_best.pth"
         )
 
-        y_pred.extend(
-            pred.cpu().numpy()
+        print(
+            f"  ✓ Best model saved "
+            f"({best_accuracy * 100:.2f}%)"
         )
 
 
-# ---------------- RESULTS ---------------- #
-
-accuracy = accuracy_score(
-    y_true,
-    y_pred
-)
+# ---------------- FINAL RESULTS ---------------- #
 
 print("\n================================")
-print("       ST-GCN TEST RESULTS")
+print("       FINAL ST-GCN RESULTS")
 print("================================")
 
 print(
-    f"\nAccuracy: {accuracy * 100:.2f}%"
+    f"\nBest Accuracy: "
+    f"{best_accuracy * 100:.2f}%"
 )
 
 print("\nClassification Report:\n")
@@ -210,3 +299,7 @@ cm = confusion_matrix(
 print(cm)
 
 print("\n================================")
+print("Training completed.")
+print("Best model saved to:")
+print("models/stgcn_best.pth")
+print("================================")

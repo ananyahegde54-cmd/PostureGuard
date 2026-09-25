@@ -21,7 +21,7 @@ from net.st_gcn import Model
 
 # ---------------- SETTINGS ---------------- #
 
-DATA_PATH = "data/new_data"
+DATA_PATH = "data/stgcn_dataset"
 
 CLASSES = {
     "good": 0,
@@ -70,7 +70,7 @@ class PostureDataset(Dataset):
 
         # Same preprocessing used during training
         # (120, 33, 3) -> (3, 120, 33)
-        x = np.transpose(x, (2, 0, 1))
+        
 
         # (3, 120, 33) -> (3, 120, 33, 1)
         x = np.expand_dims(x, axis=-1)
