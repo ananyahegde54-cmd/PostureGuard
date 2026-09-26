@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PostureGuard — Live Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Space+Grotesk:wght@400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#33271e; --deep:#7c4322; --pine:#a8641f; --sage:#e3cba4;
+    --mist:#f4e3c6; --cream:#faf2e4; --paper:#fffaef; --sand:#eed9b4;
+    --apricot:#eda45f; --terra:#c0662c;
+    --good:#8fbf7f; --mod:#eda45f; --bad:#d96a5f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;position:relative;overflow-x:hidden;}
+  .aurora{position:fixed;border-radius:50%;filter:blur(110px);opacity:.45;pointer-events:none;z-index:0;animation:drift 30s ease-in-out infinite alternate;}
+  .a1{width:50vw;height:50vw;background:var(--mist);top:-16vw;left:-12vw;}
+  .a2{width:40vw;height:40vw;background:var(--apricot);opacity:.30;bottom:-14vw;right:-10vw;animation-delay:-12s;}
+  @keyframes drift{from{transform:translate(0,0) scale(1);}to{transform:translate(4vw,-3vw) scale(1.12);}}
+  body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");}
+
+  .wrap{position:relative;z-index:5;max-width:1320px;margin:0 auto;padding:1.4rem 2rem 3rem;}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.3rem;}
+  .brand{display:flex;align-items:center;gap:.75rem;}
+  .brand .logo{width:44px;height:44px;border-radius:14px;background:var(--paper);border:1.5px solid var(--sage);
+    display:flex;align-items:center;justify-content:center;font-size:1.35rem;box-shadow:0 8px 20px rgba(124,67,34,.15);transform:rotate(-4deg);}
+  .brand h1{font-family:'Unbounded';font-size:1.1rem;color:var(--deep);}
+  .brand .sub{font-family:'Space Mono';font-size:.6rem;letter-spacing:.24em;color:var(--terra);}
+  .pills{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;}
+  .pill{background:var(--paper);border:1.5px solid var(--sage);border-radius:999px;padding:.5rem 1rem;
+    font-size:.78rem;font-weight:600;display:flex;align-items:center;gap:.45rem;box-shadow:0 6px 16px rgba(124,67,34,.10);}
+  .pill b{color:var(--terra);font-family:'Space Mono';}
+  .dotlive{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(143,191,127,.7);animation:pulse 1.6s infinite;}
+  @keyframes pulse{70%{box-shadow:0 0 0 9px rgba(143,191,127,0);}100%{box-shadow:0 0 0 0 rgba(143,191,127,0);}}
+  .btn{border:none;cursor:pointer;background:var(--deep);color:var(--cream);border-radius:12px;
+    font-family:'Unbounded';font-weight:600;font-size:.7rem;padding:.65rem 1.1rem;
+    box-shadow:0 8px 20px rgba(124,67,34,.25);transition:transform .15s,background .15s;}
+  .btn:hover{transform:translateY(-2px);background:var(--pine);}
+  .btn.ghost{background:var(--paper);color:var(--deep);border:1.5px solid var(--sage);box-shadow:none;}
+  .btn.snoozed{background:var(--sand);color:var(--pine);}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:1.5fr 1fr;gap:1.3rem;}
+  .card{background:var(--paper);border:1.5px solid var(--sage);border-radius:20px;padding:1.2rem 1.3rem;
+    box-shadow:0 12px 30px rgba(124,67,34,.10);}
+
+  /* video */
+  .video-card{padding:.9rem;}
+  .video-frame{position:relative;border-radius:14px;overflow:hidden;background:#17110d;aspect-ratio:4/3;}
+  .video-frame img{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1);} /* mirror like a selfie */
+  .cam-off{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;color:#c9b8a6;font-size:.9rem;}
+  /* web overlay banners */
+  .overlay{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:.5rem;
+    font-weight:700;font-size:.95rem;letter-spacing:.02em;padding:.85rem;
+    transform:translateY(-110%);transition:transform .35s cubic-bezier(.34,1.3,.64,1);z-index:5;}
+  .overlay.show{transform:translateY(0);}
+  .overlay.bad{top:0;background:linear-gradient(90deg,#a63d52,#8e2f47);color:#fff;border-radius:0 0 16px 16px;}
+  .overlay.mod{top:0;background:linear-gradient(90deg,var(--apricot),#d98a3d);color:#fff;border-radius:0 0 16px 16px;}
+  .overlay.predict{bottom:0;background:linear-gradient(90deg,#4f9e90,#3c7f74);color:#eafffb;
+    border-radius:16px 16px 0 0;font-weight:500;font-size:.85rem;transform:translateY(110%);}
+  .overlay.predict.show{transform:translateY(0);}
+  .overlay .tip{font-weight:500;font-size:.78rem;opacity:.92;display:block;text-align:center;}
+  .snooze-chip{position:absolute;top:.7rem;right:.7rem;background:rgba(51,39,30,.75);color:var(--sand);
+    font-family:'Space Mono';font-size:.68rem;padding:.3rem .7rem;border-radius:99px;z-index:6;display:none;}
+  .snooze-chip.show{display:block;}
+
+  /* class banner under video */
+  .status-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.9rem;flex-wrap:wrap;}
+  .status-chip{font-family:'Unbounded';font-weight:800;font-size:.95rem;padding:.6rem 1.2rem;border-radius:14px;
+    transition:all .35s;letter-spacing:.02em;}
+  .status-chip.good{background:#e6f3df;color:#4c8a3f;}
+  .status-chip.moderate{background:#fdf0dc;color:#b2711d;}
+  .status-chip.bad{background:#fbe3df;color:#b8452f;animation:shake .5s ease;}
+  .status-chip.idle{background:var(--mist);color:#8a6d4d;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+  .conf{flex:1;min-width:140px;}
+  .conf .clabel{display:flex;justify-content:space-between;font-family:'Space Mono';font-size:.62rem;color:#a08a72;margin-bottom:.3rem;}
+  .conf .bar{height:9px;border-radius:99px;background:var(--mist);overflow:hidden;}
+  .conf .bar i{display:block;height:100%;border-radius:99px;background:var(--terra);width:0;transition:width .4s;}
+  .fatigue{font-size:.72rem;color:#a08a72;margin-top:.5rem;font-style:italic;min-height:1em;}
+
+  /* ---------- side panel ---------- */
+  .side{display:flex;flex-direction:column;gap:1.3rem;}
+  .side h3{font-family:'Unbounded';font-size:.8rem;color:var(--deep);margin-bottom:.9rem;display:flex;justify-content:space-between;align-items:center;}
+  .side h3 .mini{font-family:'Space Mono';font-size:.58rem;letter-spacing:.18em;color:var(--terra);}
+
+  .metric{margin-bottom:1rem;}
+  .metric .mrow{display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.3rem;}
+  .metric .mrow b{font-family:'Space Mono';color:var(--deep);}
+  .metric .mrow .lvl{font-size:.62rem;padding:.1rem .5rem;border-radius:99px;font-weight:700;}
+  .lvl.g{background:#e6f3df;color:#4c8a3f;} .lvl.m{background:#fdf0dc;color:#b2711d;} .lvl.b{background:#fbe3df;color:#b8452f;}
+  .mbar{position:relative;height:10px;border-radius:99px;background:var(--mist);}
+  .mbar .ticks{position:absolute;inset:0;}
+  .mbar .tick{position:absolute;top:-2px;width:2px;height:14px;background:rgba(51,39,30,.35);border-radius:2px;}
+  .mbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;transition:width .35s,background .35s;}
+
+  .alerts{max-height:210px;overflow:auto;display:flex;flex-direction:column;gap:.5rem;padding-right:.2rem;}
+  .alert-item{background:var(--cream);border:1.5px solid var(--sage);border-radius:12px;padding:.55rem .8rem;
+    font-size:.74rem;animation:slidein .35s ease;}
+  @keyframes slidein{from{opacity:0;transform:translateX(14px);}to{opacity:1;transform:none;}}
+  .alert-item .at{font-family:'Space Mono';font-size:.62rem;color:var(--terra);}
+  .alert-item .ad{color:#6b5947;}
+  .no-alerts{text-align:center;color:#b3a08c;font-size:.76rem;padding:1rem 0;font-style:italic;}
+
+  .flow-row{display:flex;justify-content:space-between;font-family:'Space Mono';font-size:.7rem;color:#8a6d4d;margin-top:.4rem;}
+  .flow-row b{color:var(--deep);}
+
+  /* summary overlay */
+  .summary{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+    background:rgba(51,39,30,.45);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .35s;}
+  .summary.open{opacity:1;pointer-events:auto;}
+  .summary .panel{background:var(--paper);border:1.5px solid var(--sage);border-radius:24px;
+    width:min(480px,92vw);padding:2.2rem 2rem;box-shadow:0 40px 90px rgba(51,39,30,.35);text-align:center;
+    transform:translateY(20px) scale(.96);transition:transform .35s;}
+  .summary.open .panel{transform:none;}
+  .summary .face{font-size:3rem;}
+  .summary h2{font-family:'Unbounded';color:var(--deep);margin:.6rem 0 .3rem;font-size:1.2rem;}
+  .summary .splits{display:flex;height:16px;border-radius:99px;overflow:hidden;margin:1.2rem 0 .5rem;background:var(--mist);}
+  .summary .splits i{height:100%;}
+  .summary .slabels{display:flex;justify-content:space-between;font-size:.7rem;color:#8a6d4d;margin-bottom:1.4rem;}
+
+  @media (max-width:960px){.grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+  <div class="aurora a1"></div><div class="aurora a2"></div>
+
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">🤖</div>
+        <div>
+          <h1>PostureGuard</h1>
+          <div class="sub" id="modeSub">LIVE MONITOR</div>
+        </div>
+      </div>
+      <div class="pills">
+        <div class="pill"><span class="dotlive"></span> LIVE</div>
+        <div class="pill">⏱ <b id="timer">00:00</b></div>
+        <div class="pill" id="baselinePill" style="display:none">📐 personalised thresholds</div>
+        <button class="btn ghost" id="btnSnooze">😴 Snooze 5m</button>
+        <button class="btn" id="btnStop">■ End session</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- VIDEO -->
+      <div class="card video-card">
+        <div class="video-frame">
+          <img id="feed" src="/video_feed" alt="live posture feed"
+               onerror="this.style.display='none';document.getElementById('camOff').style.display='flex';">
+          <div class="cam-off" id="camOff" style="display:none">
+            <div style="font-size:2.4rem">🎥</div>
+            <div>Waiting for camera…<br><small>Start <b>python app.py</b> and allow webcam access</small></div>
+          </div>
+          <div class="overlay mod" id="ovMod"><span>〰 Posture drifting — sit straight</span></div>
+          <div class="overlay bad" id="ovBad"><div><span>⚠ FIX YOUR POSTURE</span><span class="tip" id="ovTip"></span></div></div>
+          <div class="overlay predict" id="ovPred"></div>
+          <div class="snooze-chip" id="snoozeChip">😴 snoozed — <span id="snoozeLeft">5:00</span></div>
+        </div>
+
+        <div class="status-row">
+          <div class="status-chip idle" id="statusChip">Warming up…</div>
+          <div class="conf">
+            <div class="clabel"><span>MODEL CONFIDENCE</span><span id="confPct">0%</span></div>
+            <div class="bar"><i id="confBar"></i></div>
+            <div class="fatigue" id="fatigue"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDE -->
+      <div class="side">
+        <div class="card">
+          <h3>Live metrics <span class="mini" id="bufMini">buffer 0/30</span></h3>
+          <div id="metrics"></div>
+          <div class="flow-row">
+            <span>optical flow <b id="flowMean">—</b></span>
+            <span>bad-frame rate <b id="badRate">—</b></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Alert log <span class="mini" id="alertCount">0 total</span></h3>
+          <div class="alerts" id="alerts"><div class="no-alerts">All clear — sit pretty 🌿</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- session summary -->
+  <div class="summary" id="summary">
+    <div class="panel">
+      <div class="face" id="sumFace">🌿</div>
+      <h2 id="sumTitle">Session complete</h2>
+      <div style="color:#8a6d4d;font-size:.85rem;" id="sumDur">—</div>
+      <div class="splits"><i id="sg" class="i-good" style="background:var(--good)"></i><i id="sm" style="background:var(--mod)"></i><i id="sb" style="background:var(--bad)"></i></div>
+      <div class="slabels"><span id="lg">good —%</span><span id="lm">moderate —%</span><span id="lb">bad —%</span></div>
+      <div style="font-size:.8rem;color:#8a6d4d;margin-bottom:1.4rem;" id="sumAlerts"></div>
+      <a class="btn" href="/postureguard-dashboard.html" style="text-decoration:none;display:inline-block;">📊 Open analytics</a>
+    </div>
+  </div>
+
+<script>
+const $=id=>document.getElementById(id);
+const CLS_KEY={good:'good',moderate:'moderate',bad:'bad'};
+const METRICS=[
+  ['head_forward','Head forward',v=>v.toFixed(3)],
+  ['shoulder_asym','Shoulder asymmetry',v=>v.toFixed(3)],
+  ['spinal_offset','Spinal offset',v=>v.toFixed(3)],
+  ['neck_angle_deg','Neck angle',v=>v.toFixed(1)+'°'],
+  ['torso_lean_deg','Torso lean',v=>v.toFixed(1)+'°'],
+];
+
+/* build metric rows once */
+const mEls={};
+$('metrics').innerHTML=METRICS.map(([key,label])=>`
+  <div class="metric" id="m_${key}">
+    <div class="mrow"><span>${label}</span><b class="mv">—</b><span class="lvl g">good</span></div>
+    <div class="mbar">
+      <div class="ticks"><span class="tick" data-thr="moderate"></span><span class="tick" data-thr="bad"></span></div>
+      <div class="fill" style="width:0;background:var(--good)"></div>
+    </div>
+  </div>`).join('');
+
+let lastAlertLen=0, stopped=false;
+
+function fmtT(s){s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+
+async function tick(){
+  if(stopped)return;
+  try{
+    const s=await (await fetch('/api/state')).json();
+
+    /* camera error */
+    if(s.camera_error){$('modeSub').textContent='⚠ '+s.camera_error.toUpperCase();return;}
+
+    $('baselinePill').style.display=s.baseline_used?'flex':'none';
+    $('timer').textContent=fmtT(s.t);
+    $('bufMini').textContent=`buffer ${s.buffer}/${s.seq_len}`;
+
+    /* status chip */
+    const chip=$('statusChip');
+    if(s.cls_name==='No person detected'){chip.className='status-chip idle';chip.textContent='🙈 No person detected';}
+    else if(s.cls_name==='Session ended'){chip.className='status-chip idle';chip.textContent='Session ended';}
+    else if(s.cls>=0){const k=CLS_KEY[s.cls_name.split(' ')[0].toLowerCase()];
+      chip.className='status-chip '+k;chip.textContent={good:'✅ GOOD POSTURE',moderate:'〰 MODERATE',bad:'⚠ BAD POSTURE'}[k];}
+    else{chip.className='status-chip idle';chip.textContent=s.cls_name;}
+
+    /* confidence */
+    $('confPct').textContent=Math.round(s.conf*100)+'%';
+    $('confBar').style.width=(s.conf*100)+'%';
+
+    /* overlays */
+    $('ovBad').classList.toggle('show',!!s.bad_alert);
+    $('ovMod').classList.toggle('show',!s.bad_alert&&!!s.mod_alert);
+    if(s.bad_alert&&s.metrics){/* show tip from latest alert if present */
+      const a=s.alerts&&s.alerts[s.alerts.length-1]; if(a)$('ovTip').textContent=a.tip;}
+    $('ovPred').classList.toggle('show',!!s.of_warning&&!s.snoozed);
+    if(s.of_warning)$('ovPred').textContent='🔮 PREDICT: '+s.of_warning;
+    $('fatigue').textContent=s.fatigue||'';
+
+    /* snooze */
+    $('snoozeChip').classList.toggle('show',!!s.snoozed);
+    if(s.snoozed)$('snoozeLeft').textContent=fmtT(s.snooze_left_s);
+    $('btnSnooze').classList.toggle('snoozed',!!s.snoozed);
+    $('btnSnooze').textContent=s.snoozed?'😴 snoozing…':'😴 Snooze 5m';
+
+    /* metrics with threshold ticks */
+    const scale={}; /* map metric → max scale for bar width */
+    for(const [key,label,fmt] of METRICS){
+      const th=s.thresh[key]||{moderate:1,bad:1};
+      scale[key]=th.bad*1.6;
+      const row=$('m_'+key), val=s.metrics?Math.abs(s.metrics[key]||0):0;
+      const lvl=val<th.moderate?'g':val<th.bad?'m':'b';
+      row.querySelector('.mv').textContent=s.metrics?fmt(s.metrics[key]):'—';
+      const lvlEl=row.querySelector('.lvl');
+      lvlEl.className='lvl '+lvl;lvlEl.textContent=lvl==='g'?'good':lvl==='m'?'moderate':'bad';
+      const fill=row.querySelector('.fill');
+      fill.style.width=Math.min(100,val/scale[key]*100)+'%';
+      fill.style.background=lvl==='g'?'var(--good)':lvl==='m'?'var(--mod)':'var(--bad)';
+      row.querySelector('[data-thr="moderate"]').style.left=(th.moderate/scale[key]*100)+'%';
+      row.querySelector('[data-thr="bad"]').style.left=(th.bad/scale[key]*100)+'%';
+    }
+    $('flowMean').textContent=(s.flow_mean||0).toFixed(4);
+    $('badRate').textContent=(s.bad_rate_pct||0).toFixed(0)+'%';
+
+    /* alerts feed */
+    if(s.alerts&&s.alerts.length){
+      $('alerts').innerHTML=[...s.alerts].reverse().map(a=>`
+        <div class="alert-item"><div class="at">⚠ t=${a.t}s · bad ${a.bad_duration}s</div>
+        <div class="ad">${a.tip||''}</div></div>`).join('');
+    }
+    $('alertCount').textContent=(s.alerts?s.alerts.length:0)+' shown';
+
+    /* session ended server-side */
+    if(!s.running&&s.summary)showSummary(s.summary);
+  }catch(e){/* server starting up — retry next poll */}
+}
+
+function showSummary(sum){
+  if(stopped)return;stopped=true;
+  $('feed').src=''; $('modeSub').textContent='SESSION COMPLETE';
+  if(!sum)return;
+  const{good_pct:g=0,moderate_pct:m=0,bad_pct:b=0,duration_s:d=0,total_alerts:a=0}=sum;
+  $('sumFace').textContent=b<15?'🏆':b<35?'🌿':'💪';
+  $('sumTitle').textContent=b<15?'Crushing it!':b<35?'Solid session':'Room to grow';
+  $('sumDur').textContent=`${fmtT(d)} · ${a} alert${a===1?'':'s'}`;
+  $('sg').style.width=g+'%';$('sm').style.width=m+'%';$('sb').style.width=b+'%';
+  $('lg').textContent=`good ${g}%`;$('lm').textContent=`moderate ${m}%`;$('lb').textContent=`bad ${b}%`;
+  $('sumAlerts').textContent=a?`${a} gentle nudge${a===1?'':'s'} along the way`:'Not a single alert — textbook. 📖';
+  $('summary').classList.add('open');
+}
+
+$('btnSnooze').onclick=()=>fetch('/api/snooze',{method:'POST'});
+$('btnStop').onclick=async()=>{
+  const r=await (await fetch('/api/stop',{method:'POST'})).json();
+  if(r&&r.summary)showSummary(r.summary);
+};
+
+setInterval(tick,500);tick();
+</script>
+</body>
+</html>

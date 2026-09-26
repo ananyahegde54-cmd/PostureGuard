@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PostureGuard — Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Space+Grotesk:wght@400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#33271e;
+    --deep:#7c4322;
+    --pine:#a8641f;
+    --sage:#e3cba4;
+    --mist:#f4e3c6;
+    --cream:#faf2e4;
+    --paper:#fffaef;
+    --sand:#eed9b4;
+    --apricot:#eda45f;
+    --terra:#c0662c;
+    --good:#8fbf7f;
+    --mod:#eda45f;
+    --bad:#d96a5f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--cream);color:var(--ink);
+    min-height:100vh;position:relative;overflow-x:hidden;}
+  .aurora{position:fixed;border-radius:50%;filter:blur(110px);opacity:.45;pointer-events:none;z-index:0;
+    animation:drift 30s ease-in-out infinite alternate;}
+  .a1{width:50vw;height:50vw;background:var(--mist);top:-16vw;left:-12vw;}
+  .a2{width:40vw;height:40vw;background:var(--apricot);opacity:.30;bottom:-14vw;right:-10vw;animation-delay:-12s;}
+  .a3{width:30vw;height:30vw;background:var(--sand);opacity:.5;top:34%;left:44%;animation-delay:-18s;}
+  @keyframes drift{from{transform:translate(0,0) scale(1);}to{transform:translate(4vw,-3vw) scale(1.12);}}
+  body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");}
+
+  .dash{position:relative;z-index:5;max-width:1280px;margin:0 auto;padding:1.6rem 2rem 6rem;}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.6rem;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:.8rem;}
+  .brand .logo{width:46px;height:46px;border-radius:14px;background:var(--paper);border:1.5px solid var(--sage);
+    display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 8px 20px rgba(124,67,34,.15);transform:rotate(-4deg);}
+  .brand h1{font-family:'Unbounded';font-size:1.15rem;color:var(--deep);}
+  .brand .sub{font-family:'Space Mono';font-size:.62rem;letter-spacing:.24em;color:var(--terra);}
+  .pills{display:flex;gap:.7rem;flex-wrap:wrap;}
+  .pill{background:var(--paper);border:1.5px solid var(--sage);border-radius:999px;padding:.5rem 1.05rem;
+    font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:.45rem;box-shadow:0 6px 16px rgba(124,67,34,.10);}
+  .pill b{color:var(--terra);}
+  .pill.streak{border-color:#f0c46a;background:#fff6dd;}
+  .pill.streak .flame{display:inline-block;animation:flick 1.6s ease-in-out infinite;}
+  @keyframes flick{0%,100%{transform:scale(1) rotate(-4deg);}50%{transform:scale(1.18) rotate(5deg);}}
+
+  /* ---------- grid ---------- */
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1.2rem;}
+  .card{background:var(--paper);border:1.5px solid var(--sage);border-radius:20px;padding:1.3rem 1.4rem;
+    box-shadow:0 12px 30px rgba(124,67,34,.10);position:relative;}
+  .card h3{font-family:'Unbounded';font-size:.82rem;color:var(--deep);margin-bottom:.2rem;}
+  .card .csub{font-size:.72rem;color:#a08a72;margin-bottom:1rem;}
+  .c4{grid-column:span 4;}.c5{grid-column:span 5;}.c6{grid-column:span 6;}
+  .c7{grid-column:span 7;}.c8{grid-column:span 8;}.c12{grid-column:span 12;}
+
+  .big{font-family:'Unbounded';font-size:2rem;font-weight:800;color:var(--deep);}
+  .big small{font-size:.9rem;color:var(--terra);font-weight:600;}
+  .delta{font-size:.75rem;font-weight:700;padding:.15rem .55rem;border-radius:99px;margin-left:.4rem;}
+  .delta.up{background:#e6f3df;color:#4c8a3f;}
+  .delta.down{background:#fbe3df;color:#c05a4e;}
+
+  /* ---------- session list ---------- */
+  .sess{display:flex;align-items:center;gap:1rem;padding:.75rem .9rem;border-radius:14px;cursor:pointer;
+    transition:transform .18s,box-shadow .18s,background .18s;border:1.5px solid transparent;}
+  .sess:hover{background:var(--cream);transform:translateX(4px);}
+  .sess.active{background:var(--cream);border-color:var(--sage);box-shadow:0 6px 16px rgba(124,67,34,.10);}
+  .sess .date{font-family:'Space Mono';font-size:.72rem;width:92px;color:var(--terra);}
+  .sess .dur{font-size:.78rem;width:74px;font-weight:600;}
+  .stackbar{flex:1;height:12px;border-radius:99px;overflow:hidden;display:flex;background:var(--mist);}
+  .stackbar i{display:block;height:100%;}
+  .i-good{background:var(--good);}.i-mod{background:var(--mod);}.i-bad{background:var(--bad);}
+  .sess .pct{font-family:'Space Mono';font-size:.7rem;width:150px;text-align:right;}
+  .sess .pct b{color:var(--pine);}
+  .empty{padding:2rem;text-align:center;color:#a08a72;font-size:.85rem;}
+
+  /* ---------- toggle ---------- */
+  .toggle{display:inline-flex;background:var(--mist);border-radius:99px;padding:3px;gap:2px;margin-left:.6rem;}
+  .toggle button{border:none;background:transparent;padding:.28rem .8rem;border-radius:99px;cursor:pointer;
+    font-family:'Space Grotesk';font-weight:600;font-size:.72rem;color:#8a6d4d;transition:all .2s;}
+  .toggle button.on{background:var(--paper);color:var(--deep);box-shadow:0 3px 8px rgba(124,67,34,.15);}
+
+  /* ---------- heatmap ---------- */
+  .heat{display:grid;grid-template-columns:44px repeat(12,1fr);gap:4px;font-size:.62rem;}
+  .heat .hh{font-family:'Space Mono';color:#a08a72;text-align:center;}
+  .heat .hd{font-family:'Space Mono';color:#a08a72;line-height:26px;}
+  .cell{height:26px;border-radius:6px;background:var(--mist);transition:transform .15s;cursor:default;}
+  .cell:hover{transform:scale(1.15);}
+
+  /* ---------- baseline gauge ---------- */
+  .gauge{position:relative;height:16px;border-radius:99px;background:linear-gradient(90deg,var(--good),var(--mod) 55%,var(--bad));margin:2.6rem .4rem 1rem;}
+  .gauge .mark{position:absolute;top:-9px;width:4px;height:34px;background:var(--ink);border-radius:3px;transform:translateX(-50%);transition:left 1s cubic-bezier(.34,1.4,.64,1);}
+  .gauge .mark::after{content:"you";position:absolute;top:-18px;left:50%;transform:translateX(-50%);
+    font-family:'Space Mono';font-size:.6rem;color:var(--ink);}
+  .glabels{display:flex;justify-content:space-between;font-family:'Space Mono';font-size:.6rem;color:#a08a72;padding:0 .4rem;}
+
+  /* ---------- buttons ---------- */
+  .btn{border:none;cursor:pointer;background:var(--deep);color:var(--cream);border-radius:12px;
+    font-family:'Unbounded';font-weight:600;font-size:.72rem;padding:.7rem 1.2rem;
+    box-shadow:0 8px 20px rgba(124,67,34,.25);transition:transform .15s,background .15s;}
+  .btn:hover{transform:translateY(-2px);background:var(--pine);}
+  .btn.ghost{background:var(--paper);color:var(--deep);border:1.5px solid var(--sage);box-shadow:none;}
+
+  /* ---------- drill-down modal ---------- */
+  .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    background:rgba(51,39,30,.45);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .3s;}
+  .modal.open{opacity:1;pointer-events:auto;}
+  .modal .panel{background:var(--paper);border-radius:22px;border:1.5px solid var(--sage);
+    width:min(860px,94vw);max-height:88vh;overflow:auto;padding:1.8rem 1.8rem 1.4rem;
+    box-shadow:0 40px 90px rgba(51,39,30,.35);transform:translateY(24px) scale(.97);transition:transform .3s;}
+  .modal.open .panel{transform:none;}
+  .modal .close{position:sticky;top:0;float:right;background:var(--mist);border:none;width:34px;height:34px;
+    border-radius:50%;cursor:pointer;font-size:1rem;color:var(--deep);}
+  .legend{display:flex;gap:1.2rem;font-size:.72rem;color:#8a6d4d;margin:.4rem 0 .8rem;flex-wrap:wrap;}
+  .legend span{display:flex;align-items:center;gap:.35rem;}
+  .legend i{width:12px;height:12px;border-radius:4px;display:inline-block;}
+
+  /* ---------- stretch mascot ---------- */
+  .mascot{position:fixed;right:1.6rem;bottom:1.6rem;z-index:50;text-align:center;cursor:pointer;user-select:none;}
+  .mascot .buddy{font-size:3rem;display:inline-block;transform-origin:bottom center;
+    filter:drop-shadow(0 10px 16px rgba(124,67,34,.25));}
+  .mascot.stretching .buddy{animation:stretch 2.2s ease-in-out;}
+  @keyframes stretch{
+    0%,100%{transform:scale(1) rotate(0);}
+    25%{transform:scale(1.06,1.14) rotate(-5deg);}
+    50%{transform:scale(.96,1.18) rotate(5deg) translateY(-8px);}
+    75%{transform:scale(1.06,1.14) rotate(-4deg) translateY(-4px);}
+  }
+  .bubble{position:absolute;bottom:110%;right:-10px;width:210px;background:var(--paper);
+    border:1.5px solid var(--sage);border-radius:16px 16px 4px 16px;padding:.8rem .9rem;
+    font-size:.78rem;line-height:1.45;box-shadow:0 14px 30px rgba(124,67,34,.18);
+    opacity:0;transform:translateY(8px) scale(.94);transform-origin:bottom right;pointer-events:none;
+    transition:opacity .3s,transform .3s;}
+  .bubble.show{opacity:1;transform:none;}
+  .bubble b{color:var(--terra);}
+  .bubble .do{display:block;margin-top:.35rem;font-family:'Space Mono';font-size:.68rem;color:var(--pine);}
+
+  @media (max-width:960px){.c4,.c5,.c6,.c7,.c8{grid-column:span 12;}}
+  @media print{
+    .mascot,.aurora,body::after{display:none!important;}
+    body{background:#fff;}
+    .card{box-shadow:none;break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+  <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
+
+  <div class="dash">
+    <!-- top bar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">🤖</div>
+        <div><h1>PostureGuard</h1><div class="sub">ANALYTICS · YOUR SPINE, CHARTED</div></div>
+      </div>
+      <div class="pills">
+        <div class="pill streak"><span class="flame">🔥</span> <b id="streakN">0</b>-day streak</div>
+        <div class="pill">📐 baseline drift <b id="baseDrift">—</b></div>
+        <div class="pill">⏱ <b id="totalTime">—</b> tracked</div>
+        <button class="btn ghost" id="btnCsv">⬇ CSV</button>
+        <button class="btn" id="btnPdf">🖨 Report</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- headline stats -->
+      <div class="card c4"><h3>Average posture score</h3><div class="csub">across all sessions</div>
+        <div class="big"><span id="avgScore">—</span><small>/100</small><span class="delta up" id="scoreDelta">—</span></div></div>
+      <div class="card c4"><h3>Sessions</h3><div class="csub">last 30 days</div>
+        <div class="big" id="sessCount">—<small> sessions</small></div></div>
+      <div class="card c4"><h3>Time upright</h3><div class="csub">good + moderate posture</div>
+        <div class="big" id="uprightPct">—</div></div>
+
+      <!-- score over time -->
+      <div class="card c8"><h3>Posture score over time <span class="toggle" id="scoreToggle">
+        <button class="on" data-mode="daily">daily</button><button data-mode="weekly">weekly</button></span></h3>
+        <div class="csub">see yourself improving, session by session</div>
+        <canvas id="scoreChart" height="110"></canvas></div>
+
+      <!-- time-of-day heatmap -->
+      <div class="card c4"><h3>When your posture slips</h3>
+        <div class="csub">bad-posture density by time of day</div>
+        <div class="heat" id="heat"></div>
+        <div style="margin-top:.9rem;font-size:.72rem;color:#8a6d4d;" id="heatInsight">—</div></div>
+
+      <!-- class breakdown donut + stacked -->
+      <div class="card c4"><h3>Time-in-class split</h3><div class="csub" id="donutSub">all sessions · pick one below to drill in</div>
+        <canvas id="donut" height="150"></canvas></div>
+
+      <!-- baseline gauge -->
+      <div class="card c8"><h3>Distance from your calibrated baseline</h3>
+        <div class="csub">how you actually sit vs. how you sat during calibration (head-forward + torso-lean, averaged)</div>
+        <div class="gauge"><div class="mark" id="gaugeMark" style="left:50%"></div></div>
+        <div class="glabels"><span>on baseline</span><span>+5°</span><span>+10°</span><span>slouching hard</span></div>
+        <div style="font-size:.85rem;margin-top:1rem;color:var(--deep);font-weight:600;" id="baseText">—</div></div>
+
+      <!-- session history -->
+      <div class="card c12"><h3>Session history</h3>
+        <div class="csub">click a session for the frame-by-frame drill-down</div>
+        <div id="sessList"></div></div>
+    </div>
+  </div>
+
+  <!-- drill-down modal -->
+  <div class="modal" id="modal">
+    <div class="panel">
+      <button class="close" id="modalClose">✕</button>
+      <h3 style="font-family:'Unbounded';color:var(--deep);" id="mTitle">Session</h3>
+      <div class="csub" id="mSub"></div>
+      <div class="legend">
+        <span><i style="background:var(--terra)"></i> head-forward (°)</span>
+        <span><i style="background:var(--apricot)"></i> torso-lean (°)</span>
+        <span><i style="background:var(--bad)"></i> alert moment</span>
+      </div>
+      <canvas id="drillChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- stretch buddy -->
+  <div class="mascot" id="mascot">
+    <div class="bubble" id="bubble"></div>
+    <div class="buddy" id="buddy">🤖</div>
+    <div style="font-family:'Space Mono';font-size:.6rem;letter-spacing:.2em;color:var(--terra);margin-top:.2rem;">TAP ME · STRETCH BREAK</div>
+  </div>
+
+<script>
+/* =====================================================================
+   DATA LAYER
+   Set API_ENDPOINT to your Flask route once it's live. Expected shape:
+   { sessions:[{id,date,duration_min,good_pct,moderate_pct,bad_pct,score,
+       baseline_drift_deg,
+       timeline:{t_min:[], head_forward:[], torso_lean:[], alerts:[]}}],
+     baseline:{head_forward_deg, torso_lean_deg},
+     streak_days, events_by_hour:[[day(0-6),hour,bad_frac],...] }
+   Until then, a deterministic demo dataset renders the full dashboard.
+===================================================================== */
+const API_ENDPOINT = null;
+
+function mulberry(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+const rnd = mulberry(42);
+
+function demoData(){
+  const sessions=[]; const now=new Date();
+  const hours=Array.from({length:24},(_,h)=>{ /* posture degrades mid-afternoon */
+    const base=Math.max(0,Math.sin((h-15)/24*Math.PI*2));
+    return Math.min(1, base*0.9 + rnd()*0.18);});
+  const events=[];
+  for(let d=0;d<7;d++)for(let h=0;h<24;h++)events.push([d,h,hours[h]*(0.7+rnd()*0.6)]);
+  for(let i=29;i>=0;i--){
+    if(rnd()<0.32) continue;                       /* not every day */
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const dur=20+Math.floor(rnd()*70);
+    const improvement=(29-i)/29;                   /* trending better */
+    const bad=Math.max(2,Math.round(28-improvement*22+rnd()*8));
+    const good=Math.min(88,Math.round(46+improvement*30+rnd()*10));
+    const mod=100-good-bad;
+    const n=Math.floor(dur/2), t=[],hf=[],tl=[],al=[];
+    for(let k=0;k<n;k++){
+      const frac=k/n;
+      t.push(+(frac*dur).toFixed(1));
+      const slump=Math.sin(frac*Math.PI)*6;        /* worse mid-session */
+      hf.push(+(6+slump+rnd()*5-improvement*3).toFixed(1));
+      tl.push(+(4+slump*0.7+rnd()*4-improvement*2).toFixed(1));
+      if((hf[k]>13||tl[k]>10)&&rnd()<0.6) al.push(+(frac*dur).toFixed(1));
+    }
+    sessions.push({id:i,date:d.toISOString().slice(0,10),duration_min:dur,
+      good_pct:good,moderate_pct:mod,bad_pct:bad,
+      score:Math.min(99,Math.round(52+improvement*38+rnd()*8)),
+      baseline_drift_deg:+(1.5+ (1-improvement)*7 + rnd()*2).toFixed(1),
+      timeline:{t_min:t,head_forward:hf,torso_lean:tl,alerts:al}});
+  }
+  return {sessions,baseline:{head_forward_deg:7,torso_lean_deg:5},streak_days:4,
+          events_by_hour:events};
+}
+async function loadData(){
+  if(API_ENDPOINT){ try{const r=await fetch(API_ENDPOINT); if(r.ok) return await r.json();}catch(e){console.warn('API unreachable, using demo data',e);} }
+  return demoData();
+}
+
+/* ---------- palette for charts ---------- */
+Chart.defaults.font.family="'Space Grotesk',sans-serif";
+Chart.defaults.color='#8a6d4d';
+const C={terra:'#c0662c',apricot:'#eda45f',deep:'#7c4322',good:'#8fbf7f',mod:'#eda45f',bad:'#d96a5f',mist:'#f4e3c6'};
+let scoreChart,donut,drillChart;
+
+const fmtDate=iso=>new Date(iso+'T00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+const fmtDur=m=>m>=60?`${Math.floor(m/60)}h ${m%60}m`:`${m}m`;
+
+function renderStats(d){
+  const s=d.sessions, n=s.length;
+  const avg=s.reduce((a,x)=>a+x.score,0)/n;
+  const first=s[0].score,last=s[s.length-1].score;
+  streakN.textContent=d.streak_days;
+  totalTime.textContent=fmtDur(s.reduce((a,x)=>a+x.duration_min,0));
+  avgScore.textContent=avg.toFixed(0);
+  const dd=last-first;
+  scoreDelta.textContent=(dd>=0?'+':'')+dd+' pts';
+  scoreDelta.className='delta '+(dd>=0?'up':'down');
+  sessCount.innerHTML=n+'<small> sessions</small>';
+  const up=s.reduce((a,x)=>a+x.good_pct+x.moderate_pct*x.duration_min/100,0);
+  const tot=s.reduce((a,x)=>a+x.duration_min,0);
+  uprightPct.innerHTML=Math.round(up/tot)+'<small>%</small>';
+  const drift=s[s.length-1].baseline_drift_deg;
+  baseDrift.textContent='+'+drift+'°';
+  gaugeMark.style.left=Math.min(96,Math.max(4,drift/12*100))+'%';
+  baseText.textContent= drift<=3? '✨ Sitting almost exactly like your calibration — muscle memory forming.'
+    : drift<=7? '👍 Close to baseline. A quick reset against the wall would help.'
+    : '🪑 You\'ve drifted from your baseline — worth re-running calibration.';
+}
+
+function renderScoreChart(d,mode){
+  const s=d.sessions;
+  let labels,data;
+  if(mode==='daily'){ labels=s.map(x=>fmtDate(x.date)); data=s.map(x=>x.score); }
+  else{
+    const weeks={}; s.forEach(x=>{const wk='W'+Math.ceil((new Date(x.date).getDate())/7); (weeks[wk]=weeks[wk]||[]).push(x.score);});
+    labels=Object.keys(weeks); data=labels.map(k=>weeks[k].reduce((a,b)=>a+b,0)/weeks[k].length);
+  }
+  const ctx=document.getElementById('scoreChart');
+  const grad=ctx.getContext('2d').createLinearGradient(0,0,0,220);
+  grad.addColorStop(0,'rgba(192,102,44,.28)');grad.addColorStop(1,'rgba(192,102,44,0)');
+  if(scoreChart)scoreChart.destroy();
+  scoreChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'score',data,
+    borderColor:C.terra,backgroundColor:grad,fill:true,tension:.42,borderWidth:2.5,
+    pointRadius:4,pointBackgroundColor:'#fffaef',pointBorderColor:C.terra,pointBorderWidth:2}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' score: '+c.parsed.y.toFixed(1)}}},
+      scales:{y:{min:20,max:100,grid:{color:'rgba(124,67,34,.07)'}},x:{grid:{display:false}}}}});
+}
+
+function renderDonut(d){
+  const s=d.sessions;
+  const g=s.reduce((a,x)=>a+x.good_pct,0)/s.length, m=s.reduce((a,x)=>a+x.moderate_pct,0)/s.length, b=100-g-m;
+  donutSub.textContent='average across '+s.length+' sessions';
+  if(donut)donut.destroy();
+  donut=new Chart(document.getElementById('donut'),{type:'doughnut',
+    data:{labels:['good','moderate','bad'],datasets:[{data:[g,m,b],
+      backgroundColor:[C.good,C.mod,C.bad],borderColor:'#fffaef',borderWidth:3,hoverOffset:8}]},
+    options:{cutout:'66%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'circle',padding:14,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>' '+c.label+': '+c.parsed.toFixed(1)+'%'}}}}});
+}
+
+function renderHeat(d){
+  const days=['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const grid=document.getElementById('heat'); grid.innerHTML='';
+  grid.insertAdjacentHTML('beforeend','<div></div>'+[8,10,12,14,16,18,20].map(h=>'<div class="hh">'+h+'</div>').join(''));
+  const byDay=Array.from({length:7},()=>Array(24).fill(0));
+  d.events_by_hour.forEach(([day,h,f])=>byDay[day][h]=f);
+  let worst={v:-1};
+  for(let dd=0;dd<7;dd++){
+    grid.insertAdjacentHTML('beforeend','<div class="hd">'+days[dd]+'</div>');
+    for(let blk=0;blk<12;blk++){
+      const h=blk*2; const f=(byDay[dd][h]+byDay[dd][h+1])/2;
+      const a=Math.min(1,f); if(a>worst.v)worst={v:a,day:days[dd],h};
+      grid.insertAdjacentHTML('beforeend',
+        `<div class="cell" title="${days[dd]} ${h}:00 — ${(a*100).toFixed(0)}% bad" style="background:rgba(217,106,95,${(a*.85).toFixed(2)})"></div>`);
+    }
+  }
+  heatInsight.innerHTML=worst.v>0?`💡 Posture tends to collapse around <b>${worst.day} ${worst.h}:00–${worst.h+2}:00</b> — schedule a stretch break just before.`:'Not enough data yet.';
+}
+
+function renderSessions(d){
+  const list=document.getElementById('sessList'); list.innerHTML='';
+  [...d.sessions].reverse().forEach(x=>{
+    const row=document.createElement('div'); row.className='sess';
+    row.innerHTML=`<span class="date">${fmtDate(x.date)}</span>
+      <span class="dur">${fmtDur(x.duration_min)}</span>
+      <div class="stackbar"><i class="i-good" style="width:${x.good_pct}%"></i><i class="i-mod" style="width:${x.moderate_pct}%"></i><i class="i-bad" style="width:${x.bad_pct}%"></i></div>
+      <span class="pct"><b>${x.good_pct}%</b> good · ${x.moderate_pct}% mod · ${x.bad_pct}% bad</span>`;
+    row.onclick=()=>{document.querySelectorAll('.sess').forEach(e=>e.classList.remove('active'));row.classList.add('active');openDrill(x);};
+    list.appendChild(row);
+  });
+  if(!d.sessions.length)list.innerHTML='<div class="empty">No sessions yet — go sit up straight somewhere. 🌿</div>';
+}
+
+function openDrill(x){
+  mTitle.textContent='Session · '+fmtDate(x.date);
+  mSub.innerHTML=`${fmtDur(x.duration_min)} · score <b>${x.score}</b> · ${x.timeline.alerts.length} alert moments · baseline drift +${x.baseline_drift_deg}°`;
+  if(drillChart)drillChart.destroy();
+  const t=x.timeline.t_min;
+  const sc=[{label:'head-forward',data:x.timeline.head_forward,borderColor:C.terra,yAxisID:'y'},
+            {label:'torso-lean',data:x.timeline.torso_lean,borderColor:C.apricot,yAxisID:'y'}];
+  const firstAlert=x.timeline.alerts.length?x.timeline.alerts[0]:null;
+  drillChart=new Chart(document.getElementById('drillChart'),{type:'line',
+    data:{labels:t,datasets:[...sc,
+      {type:'scatter',label:'alerts',data:x.timeline.alerts.map(a=>({x:a,y:null})),
+       xAxisID:'x',yAxisID:'y2',pointStyle:'triangle',pointRadius:7,pointBackgroundColor:C.bad,showLine:false}]},
+    options:{plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>c.dataset.type==='scatter'?' ⚠ alert at '+c.parsed.x+' min':` ${c.dataset.label}: ${c.parsed.y}°`}}},
+      scales:{y:{title:{display:true,text:'degrees',font:{size:10}},grid:{color:'rgba(124,67,34,.07)'}},
+              y2:{display:false,min:0,max:1},
+              x:{type:'linear',title:{display:true,text:'minutes into session',font:{size:10}},grid:{display:false}}},
+      animation:{duration:500}}});
+  modal.classList.add('open');
+}
+modalClose.onclick=()=>modal.classList.remove('open');
+modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open');};
+
+/* ---------- exports ---------- */
+btnCsv.onclick=()=>{
+  let csv='date,duration_min,score,good_pct,moderate_pct,bad_pct,baseline_drift_deg\n';
+  DATA.sessions.forEach(x=>csv+=`${x.date},${x.duration_min},${x.score},${x.good_pct},${x.moderate_pct},${x.bad_pct},${x.baseline_drift_deg}\n`);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='postureguard_report.csv';a.click();URL.revokeObjectURL(a.href);
+};
+btnPdf.onclick=()=>window.print();
+
+/* ---------- stretch buddy ---------- */
+const tips=[
+  ['⏰ You\'ve been still a while.','shoulder rolls ×10, slow & big'],
+  ['👀 Eyes feeling heavy?','20-20-20: look 20ft away, 20 seconds'],
+  ['🙆 Reach for the sky.','stand up, arms up, 5 slow breaths'],
+  ['🔄 Neck half-moons.','ear to shoulder, both sides ×5'],
+  ['🧍 Wall reset.','back to the wall 60s — find your baseline again'],
+  ['💪 Chin tucks ×5.','make a double chin, hold 5s. trust the process.'],
+];
+let tipI=0;
+function stretch(auto){
+  const [msg,do_]=tips[tipI++%tips.length];
+  bubble.innerHTML=`<b>${msg}</b><span class="do">▸ ${do_}</span>`;
+  bubble.classList.add('show');
+  mascot.classList.add('stretching');
+  buddy.textContent='🙆';
+  setTimeout(()=>{mascot.classList.remove('stretching');buddy.textContent='🤖';},2200);
+  setTimeout(()=>bubble.classList.remove('show'),7000);
+}
+mascot.onclick=()=>stretch(false);
+setInterval(()=>stretch(true),45000); setTimeout(()=>stretch(true),9000);
+
+/* ---------- boot ---------- */
+let DATA;
+loadData().then(d=>{
+  DATA=d;
+  renderStats(d); renderScoreChart(d,'daily'); renderDonut(d); renderHeat(d); renderSessions(d);
+});
+document.getElementById('scoreToggle').addEventListener('click',e=>{
+  if(e.target.tagName!=='BUTTON')return;
+  document.querySelectorAll('#scoreToggle button').forEach(b=>b.classList.remove('on'));
+  e.target.classList.add('on'); renderScoreChart(DATA,e.target.dataset.mode);
+});
+</script>
+</body>
+</html>

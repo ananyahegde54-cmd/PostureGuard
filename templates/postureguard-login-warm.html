@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PostureGuard — Pure posture, naturally aligned</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Space+Grotesk:wght@400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#33271e;
+    --deep:#7c4322;
+    --pine:#a8641f;
+    --sage:#e3cba4;
+    --mist:#f4e3c6;
+    --cream:#faf2e4;
+    --paper:#fffaef;
+    --sand:#eed9b4;
+    --aqua:#eda45f;
+    --aqua-deep:#c0662c;
+    --coco:#d9a441;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:'Space Grotesk',system-ui,sans-serif;
+    background:var(--cream);color:var(--ink);
+    overflow:hidden;position:relative;
+  }
+
+  /* ---------- calm aurora background ---------- */
+  .aurora{position:absolute;border-radius:50%;filter:blur(110px);opacity:.5;pointer-events:none;z-index:0;
+    animation:drift 30s ease-in-out infinite alternate;}
+  .a1{width:56vw;height:56vw;background:var(--mist);top:-18vw;left:-14vw;}
+  .a2{width:44vw;height:44vw;background:#eda45f;opacity:.38;bottom:-16vw;right:-10vw;animation-delay:-10s;}
+  .a3{width:34vw;height:34vw;background:var(--sand);opacity:.55;top:30%;left:38%;animation-delay:-18s;}
+  @keyframes drift{from{transform:translate(0,0) scale(1);}to{transform:translate(4vw,-3vw) scale(1.12);}}
+  body::after{
+    content:"";position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  }
+  #waves{position:fixed;inset:0;z-index:1;}
+
+  /* ---------- calm ticker ---------- */
+  .ticker{position:fixed;top:0;left:0;right:0;z-index:30;background:var(--deep);color:var(--cream);
+    overflow:hidden;white-space:nowrap;font-family:'Space Mono',monospace;font-size:.74rem;
+    letter-spacing:.18em;padding:.55rem 0;opacity:.96;}
+  .ticker-track{display:inline-block;animation:marquee 40s linear infinite;}
+  .ticker span{margin:0 1.6rem;opacity:.85;}
+  .ticker .dot{color:var(--aqua);}
+  @keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  /* ---------- headline ---------- */
+  .hero{position:fixed;z-index:5;left:4.5rem;top:50%;transform:translateY(-54%);max-width:44vw;pointer-events:none;}
+  .hero .kicker{font-family:'Space Mono';font-size:.75rem;letter-spacing:.3em;color:var(--aqua-deep);margin-bottom:1.2rem;}
+  h1{font-family:'Unbounded';font-weight:800;line-height:1.04;letter-spacing:-.01em;
+    font-size:clamp(2.2rem,4.6vw,4rem);text-transform:uppercase;color:var(--deep);}
+  h1 .soft{color:var(--aqua-deep);}
+  h1 .outline{color:transparent;-webkit-text-stroke:1.5px var(--pine);}
+  h1 .leafy{position:relative;white-space:nowrap;}
+  h1 .leafy::after{content:"";position:absolute;left:0;right:0;bottom:.06em;height:.28em;
+    background:var(--aqua);opacity:.45;z-index:-1;border-radius:4px;}
+  .hero p{margin-top:1.3rem;max-width:36ch;color:#7d6a58;font-size:1rem;line-height:1.6;}
+
+  /* ---------- shared widget style ---------- */
+  .widget{position:fixed;z-index:10;padding:.9rem 1.1rem;background:transparent;}
+  .widget .wlabel{font-family:'Space Mono';font-size:.62rem;letter-spacing:.22em;color:var(--aqua-deep);margin-bottom:.4rem;}
+
+  /* session clock */
+  .w-clock{top:4.6rem;left:4.5rem;}
+  .clock-time{font-family:'Unbounded';font-size:1.25rem;font-weight:600;color:var(--deep);}
+  .clock-sub{font-size:.7rem;color:#8aa395;}
+
+  /* posture dial */
+  .w-dial{top:4.6rem;right:4.5rem;width:150px;text-align:center;}
+  .w-dial .dial-svg{filter:drop-shadow(0 10px 20px rgba(192,102,44,.18));}
+  .dial-svg{width:110px;height:110px;}
+  .needle{transform-origin:60px 60px;animation:jitter 2.6s ease-in-out infinite;}
+  @keyframes jitter{0%,100%{transform:rotate(-4deg);}50%{transform:rotate(5deg);}}
+
+  /* breathing orb */
+  .w-breathe{bottom:4.5rem;left:4.5rem;display:flex;align-items:center;gap:1rem;}
+  .orb{width:62px;height:62px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#bfe8de,var(--aqua) 60%,var(--aqua-deep));
+    animation:breathe 8s ease-in-out infinite;box-shadow:0 8px 24px rgba(79,158,144,.35);}
+  @keyframes breathe{0%,100%{transform:scale(.78);}50%{transform:scale(1.08);}}
+  .breathe-text{font-size:.85rem;font-weight:600;color:var(--deep);min-width:86px;}
+
+  /* quirky eye */
+  .w-eye{bottom:4.5rem;right:4.5rem;cursor:pointer;}
+  .w-eye .wlabel{text-align:center;}
+  .eyeball{width:58px;height:58px;border-radius:50%;background:#fff;border:1.5px solid var(--sage);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;}
+  .pupil{width:20px;height:20px;border-radius:50%;background:var(--deep);position:relative;transition:transform .12s ease-out;}
+  .pupil::after{content:"";position:absolute;top:4px;left:5px;width:6px;height:6px;border-radius:50%;background:#fff;}
+  .eyeball.blink .pupil{animation:squint .22s ease;}
+  @keyframes squint{50%{transform:translate(var(--px,0),var(--py,0)) scaleY(.08);}}
+  .eyeball.blink{animation:eyelid .22s ease;}
+  @keyframes eyelid{50%{transform:scaleY(.12);}}
+
+
+  /* swaying spine — hover to straighten */
+  .w-spine{top:19%;left:46%;text-align:center;cursor:pointer;}
+  .w-spine .spine{filter:drop-shadow(0 10px 18px rgba(192,102,44,.16));}
+  .spine{display:inline-flex;flex-direction:column;gap:3px;align-items:center;transition:transform .8s cubic-bezier(.34,1.56,.64,1);
+    transform-origin:bottom center;animation:sway 4.5s ease-in-out infinite;}
+  @keyframes sway{0%,100%{transform:rotate(-5deg);}50%{transform:rotate(5deg);}}
+  .w-spine:hover .spine{animation:none;transform:rotate(0);}
+  .vertebra{width:34px;height:15px;border-radius:99px;background:#fff;border:1.5px solid var(--sage);
+    transition:all .5s ease;}
+  .spine-head{width:40px;height:34px;border-radius:12px;background:var(--coco);border:1.5px solid #d9b877;
+    position:relative;transition:transform .5s ease;}
+  .spine-head::before,.spine-head::after{content:"";position:absolute;top:12px;width:5px;height:6px;border-radius:50%;background:var(--ink);opacity:0;transition:opacity .4s;}
+  .spine-head::before{left:10px;}.spine-head::after{right:10px;}
+  .w-spine:hover .spine-head{transform:translateY(-4px);}
+  .w-spine:hover .spine-head::before,.w-spine:hover .spine-head::after{opacity:1;}
+  .spine-msg{font-size:.68rem;color:#8aa395;margin-top:.35rem;min-height:1em;font-style:italic;transition:color .4s;}
+  .w-spine:hover .spine-msg{color:var(--aqua-deep);}
+
+  /* floating palm leaves */
+  .leaf{position:fixed;z-index:3;font-size:1.6rem;opacity:.5;pointer-events:none;animation:floaty 12s ease-in-out infinite;}
+  .lf1{top:22%;left:8%;animation-delay:-2s;}
+  .lf2{top:66%;left:26%;animation-delay:-7s;font-size:1.2rem;}
+  .lf3{top:14%;right:30%;animation-delay:-4s;font-size:1.3rem;}
+  @keyframes floaty{0%,100%{transform:translate(0,0) rotate(-8deg);}50%{transform:translate(14px,-22px) rotate(10deg);}}
+
+  /* ---------- paper plane ---------- */
+  .plane-scene{position:fixed;z-index:20;right:16%;top:56%;width:280px;height:170px;
+    perspective:900px;cursor:pointer;transition:opacity .5s ease;}
+  .plane{position:absolute;inset:0;transform-style:preserve-3d;
+    animation:glide 6s ease-in-out infinite;}
+  @keyframes glide{0%,100%{transform:translateY(0) rotate(2deg);}50%{transform:translateY(-16px) rotate(-2deg);}}
+  .plane svg{width:100%;height:100%;filter:drop-shadow(0 14px 18px rgba(124,67,34,.25));
+    transition:transform .35s ease-out;}
+  .plane-shadow{position:absolute;left:20%;right:20%;bottom:-24px;height:14px;border-radius:50%;
+    background:radial-gradient(ellipse,rgba(30,77,59,.22),transparent 70%);animation:shgrow 6s ease-in-out infinite;}
+  @keyframes shgrow{0%,100%{transform:scaleX(1);opacity:.8;}50%{transform:scaleX(.72);opacity:.45;}}
+  .plane-hint{position:absolute;bottom:-52px;left:0;right:0;text-align:center;
+    font-family:'Space Mono';font-size:.66rem;letter-spacing:.24em;color:var(--aqua-deep);}
+  .plane-scene.launch{opacity:0;}
+  .plane-scene.launch .plane{animation:takeoff 1s cubic-bezier(.5,0,.7,.4) forwards;}
+  @keyframes takeoff{
+    0%{transform:translate(0,0) rotate(0);}
+    100%{transform:translate(90vw,-38vh) rotate(14deg);}
+  }
+
+  /* ---------- unfolded paper sheet / form ---------- */
+  .sheet-wrap{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;
+    perspective:1400px;pointer-events:none;}
+  .sheet{width:min(430px,92vw);background:var(--paper);border:1.5px solid var(--sage);
+    border-radius:20px;padding:2.6rem 2.4rem 2.2rem;position:relative;
+    box-shadow:0 30px 70px rgba(124,67,34,.22);
+    opacity:0;transform:rotateX(-84deg) translateY(90px) scale(.7);transform-origin:center bottom;
+    transition:transform 1s cubic-bezier(.34,1.3,.5,1),opacity .6s ease;}
+  .sheet-wrap.open{pointer-events:auto;}
+  .sheet-wrap.open .sheet{opacity:1;transform:rotateX(0) translateY(0) scale(1);}
+  .sheet::before{content:"";position:absolute;inset:0;border-radius:20px;pointer-events:none;
+    background:
+      linear-gradient(100deg,transparent 48%,rgba(30,77,59,.06) 49.4%,rgba(30,77,59,.06) 50.6%,transparent 52%),
+      linear-gradient(-100deg,transparent 48%,rgba(30,77,59,.06) 49.4%,rgba(30,77,59,.06) 50.6%,transparent 52%),
+      linear-gradient(rgba(30,77,59,.05) 1px,transparent 1px);
+    background-size:100% 100%,100% 100%,100% 33.4%;}
+  .sheet::after{content:"";position:absolute;top:0;left:6%;right:6%;height:26px;
+    background:linear-gradient(rgba(30,77,59,.08),transparent);border-radius:20px 20px 0 0;pointer-events:none;}
+  .sheet.crumple{animation:crumple 1.05s cubic-bezier(.55,-.1,.8,.4) forwards;}
+  @keyframes crumple{
+    0%{transform:rotateX(0) scale(1);opacity:1;}
+    25%{transform:rotateX(8deg) rotate(-4deg) scale(.94);}
+    55%{transform:rotate(10deg) scale(.45,.55);border-radius:34% 46% 40% 52%;}
+    80%{transform:rotate(24deg) scale(.16,.2);border-radius:50%;opacity:.9;}
+    100%{transform:rotate(40deg) scale(.02);border-radius:50%;opacity:0;}
+  }
+  .sheet .close-fold{position:absolute;top:.9rem;right:1.1rem;background:none;border:none;
+    font-size:1rem;cursor:pointer;color:#9db5a9;}
+  .sheet h2{font-family:'Unbounded';font-size:1.3rem;text-align:center;color:var(--deep);}
+  .sheet .tag{text-align:center;color:#8aa395;font-size:.88rem;margin:.45rem 0 1.7rem;}
+  .field{margin-bottom:1.1rem;}
+  .field label{display:block;font-weight:600;font-size:.82rem;color:var(--pine);margin-bottom:.4rem;}
+  .field input{width:100%;padding:.9rem 2.6rem .9rem 1rem;border:1.5px solid var(--sage);border-radius:13px;
+    background:var(--cream);font-family:'Space Grotesk';font-size:.93rem;color:var(--ink);
+    transition:box-shadow .25s,border-color .25s,transform .25s;}
+  .field input:focus{outline:none;border-color:var(--aqua-deep);background:#fff;
+    box-shadow:0 8px 22px rgba(79,158,144,.18);transform:translateY(-2px);}
+  .field .ficon{position:absolute;right:.95rem;bottom:.85rem;opacity:.45;font-size:1rem;pointer-events:none;}
+  .field{position:relative;}
+  .eye{position:absolute;right:.7rem;bottom:.6rem;background:none;border:none;cursor:pointer;font-size:1rem;}
+  .note{font-size:.74rem;color:#9db5a9;text-align:center;margin-bottom:1.1rem;min-height:1.1em;transition:color .3s;}
+  .note.ok{color:var(--aqua-deep);font-weight:600;}
+  .btn{width:100%;padding:.95rem;border:none;cursor:pointer;background:var(--deep);color:var(--cream);
+    border-radius:14px;font-family:'Unbounded';font-weight:600;font-size:.85rem;letter-spacing:.04em;
+    box-shadow:0 10px 26px rgba(30,77,59,.28);position:relative;overflow:hidden;
+    transition:transform .2s,background .2s;}
+  .btn:hover{transform:translateY(-2px);background:var(--pine);}
+  .btn:active{transform:translateY(1px);}
+  .btn .shine{position:absolute;top:0;left:-80%;width:45%;height:100%;
+    background:linear-gradient(105deg,transparent,rgba(255,255,255,.28),transparent);
+    animation:shine 4.5s ease-in-out infinite;}
+  @keyframes shine{0%{left:-80%;}50%,100%{left:130%;}}
+  .btn.done{background:var(--aqua-deep);}
+  .sheet .foot{text-align:center;font-size:.76rem;color:#8aa395;margin-top:1.2rem;line-height:1.6;}
+  .sheet .foot b{color:var(--pine);}
+
+  @media (max-width:1000px){
+    .hero{left:1.4rem;right:1.4rem;max-width:none;top:14%;transform:none;}
+    .hero p{display:none;}
+    .w-spine,.w-dial{display:none;}
+    .plane-scene{right:auto;left:50%;top:auto;bottom:16%;transform:translateX(-50%);}
+    .w-clock{left:1.4rem;top:4.4rem;} .w-breathe{left:1.4rem;bottom:1.4rem;}
+    .w-eye{right:1.4rem;bottom:1.4rem;}
+  }
+</style>
+</head>
+<body>
+  <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
+  <canvas id="waves"></canvas>
+  <span class="leaf lf1">🌿</span><span class="leaf lf2">🍃</span><span class="leaf lf3">🌱</span>
+
+  <div class="ticker"><div class="ticker-track" id="tickerTrack"></div></div>
+
+  <section class="hero">
+    <div class="kicker">POSTUREGUARD · PURE ALIGNMENT</div>
+    <h1>Pure <span class="soft">posture.</span><br><span class="outline">Naturally</span> <span class="leafy">aligned.</span></h1>
+    <p>Like water from a green coconut — good posture should come naturally. We just watch, and gently remind.</p>
+  </section>
+
+  <!-- live widgets -->
+  <div class="widget w-clock">
+    <div class="wlabel">SESSION</div>
+    <div class="clock-time" id="clockTime">00:00</div>
+    <div class="clock-sub">upright minutes today</div>
+  </div>
+
+  <div class="widget w-dial">
+    <div class="wlabel">SLOUCH METER</div>
+    <svg class="dial-svg" viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="52" fill="none" stroke="var(--mist)" stroke-width="9"/>
+      <circle cx="60" cy="60" r="52" fill="none" stroke="var(--aqua)" stroke-width="9"
+              stroke-linecap="round" stroke-dasharray="240 327" transform="rotate(120 60 60)"/>
+      <g class="needle"><line x1="60" y1="60" x2="60" y2="20" stroke="var(--deep)" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="60" cy="60" r="5" fill="var(--deep)"/></g>
+    </svg>
+    <div class="clock-sub">92% upright</div>
+  </div>
+
+  <div class="widget w-spine" id="spineWidget">
+    <div class="wlabel">YOUR SPINE, LIVE</div>
+    <div class="spine">
+      <div class="spine-head"></div>
+      <div class="vertebra" style="width:30px"></div><div class="vertebra" style="width:32px"></div>
+      <div class="vertebra" style="width:32px"></div><div class="vertebra" style="width:30px"></div>
+      <div class="vertebra" style="width:26px"></div>
+    </div>
+    <div class="spine-msg" id="spineMsg">slouching… hover me</div>
+  </div>
+
+
+  <div class="widget w-breathe">
+    <div class="orb"></div>
+    <div>
+      <div class="wlabel">BREATHE</div>
+      <div class="breathe-text" id="breatheText">breathe in…</div>
+    </div>
+  </div>
+
+  <div class="widget w-eye" id="eyeWidget" title="I see your slouch.">
+    <div class="wlabel">GUARDIAN</div>
+    <div class="eyeball" id="eyeball"><div class="pupil" id="pupil"></div></div>
+  </div>
+
+  <!-- paper plane -->
+  <div class="plane-scene" id="planeScene" role="button" aria-label="Open login" tabindex="0">
+    <div class="plane" id="plane">
+      <svg viewBox="0 0 200 130">
+        <polygon points="192,65 8,14 74,65" fill="#fffdf7" stroke="var(--sage)" stroke-width="2" stroke-linejoin="round"/>
+        <polygon points="192,65 74,65 8,116" fill="var(--mist)" stroke="var(--sage)" stroke-width="2" stroke-linejoin="round"/>
+        <line x1="8" y1="65" x2="192" y2="65" stroke="var(--sage)" stroke-width="1.4"/>
+        <text x="86" y="52" font-family="Unbounded" font-weight="800" font-size="17" fill="var(--deep)"
+              letter-spacing="3" transform="rotate(-2 86 52)">LOGIN</text>
+      </svg>
+    </div>
+    <div class="plane-shadow"></div>
+    <div class="plane-hint">TOUCH THE PLANE ✈</div>
+  </div>
+
+  <!-- unfolded sheet -->
+  <div class="sheet-wrap" id="sheetWrap">
+    <form class="sheet" id="sheet" autocomplete="off">
+      <button type="button" class="close-fold" id="closeFold" aria-label="Fold back">✕ fold</button>
+      <h2>Unfolded just for you</h2>
+      <p class="tag">Sign in — or we'll quietly make you an account.</p>
+
+      <div class="field">
+        <label for="user">Username</label>
+        <input id="user" type="text" placeholder="Enter your username" required>
+        <span class="ficon">👤</span>
+      </div>
+      <div class="field">
+        <label for="pass">Password</label>
+        <input id="pass" type="password" placeholder="Enter your password" required>
+        <button type="button" class="eye" id="eye">🙈</button>
+      </div>
+      <div class="note" id="note">💡 New here? One sign-in creates your account.</div>
+
+      <button class="btn" type="submit" id="btn"><span class="shine"></span><span id="btnText">Get Started →</span></button>
+      <p class="foot">First time? You'll <b>calibrate your posture</b> next.<br>Chin up. Shoulders back. 🌿</p>
+    </form>
+  </div>
+
+<script>
+  const NEXT_PAGE = 'dashboard.html'; /* ← connected page after login */
+
+  /* calm ticker */
+  const items = ['PURE POSTURE','NATURALLY ALIGNED','SIT LIKE A GREEN COCONUT — TALL','HYDRATE · BREATHE · STRAIGHTEN','NO WEARABLES · NO FUSS','KEEP SIPPING ON GOOD HABITS'];
+  const half = items.map(t=>`<span>${t}</span><span class="dot">✦</span>`).join('');
+  tickerTrack.innerHTML = half + half;
+
+  /* wave canvas — reacts to mouse */
+  const cv = document.getElementById('waves'), ctx = cv.getContext('2d');
+  let W,H,mx=.5,my=.5,t=0;
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+  addEventListener('resize',resize);resize();
+  addEventListener('mousemove',e=>{mx=e.clientX/W;my=e.clientY/H;});
+  (function drawWaves(){
+    ctx.clearRect(0,0,W,H);t+=.012;
+    for(let l=0;l<3;l++){
+      ctx.beginPath();
+      const base=H*(.62+l*.11)+ (my-.5)*40*(l+1)*.4;
+      for(let x=0;x<=W;x+=8){
+        const y=base+Math.sin(x*.006+t*(1+l*.35)+l*2)*(16+l*10+mx*14);
+        x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();
+      ctx.fillStyle=['rgba(237,164,95,.14)','rgba(227,203,164,.18)','rgba(244,227,198,.24)'][l];
+      ctx.fill();
+    }
+    requestAnimationFrame(drawWaves);
+  })();
+
+  /* session clock */
+  let secs=0;
+  setInterval(()=>{secs++;
+    clockTime.textContent=String(Math.floor(secs/60)).padStart(2,'0')+':'+String(secs%60).padStart(2,'0');
+  },1000);
+
+  /* breathing text cycle */
+  const bT=document.getElementById('breatheText');
+  setInterval(()=>{bT.textContent = bT.textContent.includes('in')?'breathe out…':'breathe in…';},4000);
+
+  /* spine quirk — hover straightens */
+  const sw=document.getElementById('spineWidget');
+  sw.addEventListener('mouseenter',()=>spineMsg.textContent='ahh… perfectly straight ✨');
+  sw.addEventListener('mouseleave',()=>spineMsg.textContent='slouching… hover me');
+
+  /* guardian eye — follows cursor, blinks */
+  const pupil=document.getElementById('pupil');
+  addEventListener('mousemove',e=>{
+    const dx=(e.clientX/innerWidth-.5)*22, dy=(e.clientY/innerHeight-.5)*18;
+    pupil.style.setProperty('--px',dx+'px');pupil.style.setProperty('--py',dy+'px');
+    pupil.style.transform=`translate(${dx}px,${dy}px)`;
+  });
+  setInterval(()=>{
+    const eb=document.getElementById('eyeball');
+    eb.classList.add('blink');setTimeout(()=>eb.classList.remove('blink'),240);
+  },3600);
+
+  /* plane tilts gently toward cursor */
+  const planeScene=document.getElementById('planeScene'), planeSvg=plane.querySelector('svg');
+  addEventListener('mousemove',e=>{
+    if(planeScene.classList.contains('launch'))return;
+    const dx=(e.clientX/innerWidth-.5)*10, dy=(e.clientY/innerHeight-.5)*7;
+    planeSvg.style.transform=`rotate(${dx*.6}deg) translate(${dx}px,${dy}px)`;
+  });
+
+  /* unfold → form */
+  const sheetWrap=document.getElementById('sheetWrap');
+  function openSheet(){planeScene.style.opacity='0';planeScene.style.pointerEvents='none';sheetWrap.classList.add('open');}
+  function closeSheet(){
+    sheetWrap.classList.remove('open');
+    setTimeout(()=>{planeScene.style.opacity='';planeScene.style.pointerEvents='';},600);
+  }
+  planeScene.addEventListener('click',openSheet);
+  planeScene.addEventListener('keydown',e=>{if(e.key==='Enter')openSheet();});
+  document.getElementById('closeFold').addEventListener('click',closeSheet);
+
+  /* password peek */
+  const pass=document.getElementById('pass'), eyeBtn=document.getElementById('eye');
+  eyeBtn.addEventListener('click',()=>{
+    const show=pass.type==='password';
+    pass.type=show?'text':'password';eyeBtn.textContent=show?'🐵':'🙈';
+  });
+
+  /* submit → crumple → fly → next page */
+  document.getElementById('sheet').addEventListener('submit',e=>{
+    e.preventDefault();
+    const btn=document.getElementById('btn'),txt=document.getElementById('btnText'),note=document.getElementById('note');
+    txt.textContent='⏳ Checking your stance…';btn.disabled=true;
+    setTimeout(()=>{
+      txt.textContent='✅ Upright & verified';btn.classList.add('done');
+      note.textContent='🌿 Welcome back. Folding you in…';note.classList.add('ok');
+      setTimeout(()=>{
+        const sheet=document.getElementById('sheet');
+        sheet.classList.add('crumple');                    /* crumple into a ball */
+        setTimeout(()=>{
+          planeScene.style.pointerEvents='none';
+          planeScene.style.opacity='1';                   /* ball becomes plane */
+          planeScene.classList.add('launch');             /* …and flies off */
+          setTimeout(()=>{ window.location.href=NEXT_PAGE; },1000);
+        },900);
+      },900);
+    },1200);
+  });
+</script>
+</body>
+</html>

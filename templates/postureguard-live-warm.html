@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PostureGuard — Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Space+Grotesk:wght@400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+  :root{
+    --ink:#33271e;
+    --deep:#7c4322;
+    --pine:#a8641f;
+    --sage:#e3cba4;
+    --mist:#f4e3c6;
+    --cream:#faf2e4;
+    --paper:#fffaef;
+    --sand:#eed9b4;
+    --apricot:#eda45f;
+    --terra:#c0662c;
+    --good:#8fbf7f;
+    --mod:#eda45f;
+    --bad:#d96a5f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Space Grotesk',system-ui,sans-serif;background:var(--cream);color:var(--ink);
+    min-height:100vh;position:relative;overflow-x:hidden;}
+  .aurora{position:fixed;border-radius:50%;filter:blur(110px);opacity:.45;pointer-events:none;z-index:0;
+    animation:drift 30s ease-in-out infinite alternate;}
+  .a1{width:50vw;height:50vw;background:var(--mist);top:-16vw;left:-12vw;}
+  .a2{width:40vw;height:40vw;background:var(--apricot);opacity:.30;bottom:-14vw;right:-10vw;animation-delay:-12s;}
+  .a3{width:30vw;height:30vw;background:var(--sand);opacity:.5;top:34%;left:44%;animation-delay:-18s;}
+  @keyframes drift{from{transform:translate(0,0) scale(1);}to{transform:translate(4vw,-3vw) scale(1.12);}}
+  body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");}
+
+  .dash{position:relative;z-index:5;max-width:1280px;margin:0 auto;padding:1.6rem 2rem 6rem;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.6rem;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:.8rem;}
+  .brand .logo{width:46px;height:46px;border-radius:14px;background:var(--paper);border:1.5px solid var(--sage);
+    display:flex;align-items:center;justify-content:center;font-size:1.4rem;box-shadow:0 8px 20px rgba(124,67,34,.15);transform:rotate(-4deg);}
+  .brand h1{font-family:'Unbounded';font-size:1.15rem;color:var(--deep);}
+  .brand .sub{font-family:'Space Mono';font-size:.62rem;letter-spacing:.24em;color:var(--terra);}
+  .pills{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;}
+  .pill{background:var(--paper);border:1.5px solid var(--sage);border-radius:999px;padding:.5rem 1.05rem;
+    font-size:.8rem;font-weight:600;display:flex;align-items:center;gap:.45rem;box-shadow:0 6px 16px rgba(124,67,34,.10);}
+  .pill b{color:var(--terra);}
+  .pill.live{border-color:#9fd18a;background:#eef8e9;}
+  .pill.live .dot{width:8px;height:8px;border-radius:50%;background:#7fae6c;animation:pulse 1.6s ease-in-out infinite;}
+  .pill.offline .dot{background:#c98f7d;animation:none;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.8);}}
+  .navlink{background:var(--paper);border:1.5px solid var(--sage);border-radius:999px;padding:.5rem 1.05rem;
+    font-size:.8rem;font-weight:600;color:var(--deep);text-decoration:none;}
+  .navlink:hover{background:var(--cream);}
+
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:1.2rem;}
+  .card{background:var(--paper);border:1.5px solid var(--sage);border-radius:20px;padding:1.3rem 1.4rem;
+    box-shadow:0 12px 30px rgba(124,67,34,.10);position:relative;}
+  .card h3{font-family:'Unbounded';font-size:.82rem;color:var(--deep);margin-bottom:.2rem;}
+  .card .csub{font-size:.72rem;color:#a08a72;margin-bottom:1rem;}
+  .c4{grid-column:span 4;}.c5{grid-column:span 5;}.c7{grid-column:span 7;}.c8{grid-column:span 8;}.c12{grid-column:span 12;}
+  @media (max-width:960px){.c4,.c5,.c7,.c8{grid-column:span 12;}}
+
+  /* ---------- video ---------- */
+  .videowrap{position:relative;border-radius:14px;overflow:hidden;background:var(--ink);aspect-ratio:4/3;}
+  .videowrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .videowrap .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:#cbb99e;font-size:.85rem;text-align:center;padding:2rem;font-family:'Space Mono';}
+  .buffering{position:absolute;top:.8rem;left:.8rem;background:rgba(51,39,30,.6);color:#fbe9c8;
+    font-family:'Space Mono';font-size:.68rem;padding:.35rem .7rem;border-radius:99px;}
+
+  /* ---------- status ---------- */
+  .statuslabel{font-family:'Unbounded';font-size:1.5rem;font-weight:800;}
+  .s-good{color:#4c8a3f;} .s-mod{color:#a8641f;} .s-bad{color:#b23f34;} .s-none{color:#a08a72;}
+  .confbar{position:relative;height:14px;border-radius:99px;background:var(--mist);margin:1rem 0 .4rem;overflow:hidden;}
+  .confbar .fill{height:100%;border-radius:99px;transition:width .3s ease,background .3s ease;}
+  .timer{font-family:'Space Mono';font-size:1.3rem;color:var(--deep);}
+
+  /* ---------- baseline gauge (reused from analytics) ---------- */
+  .gauge{position:relative;height:16px;border-radius:99px;background:linear-gradient(90deg,var(--good),var(--mod) 55%,var(--bad));margin:1.4rem .4rem 1rem;}
+  .gauge .mark{position:absolute;top:-9px;width:4px;height:34px;background:var(--ink);border-radius:3px;transform:translateX(-50%);transition:left .6s cubic-bezier(.34,1.4,.64,1);}
+  .gauge .mark::after{content:"you";position:absolute;top:-18px;left:50%;transform:translateX(-50%);
+    font-family:'Space Mono';font-size:.6rem;color:var(--ink);}
+  .glabels{display:flex;justify-content:space-between;font-family:'Space Mono';font-size:.6rem;color:#a08a72;padding:0 .4rem;}
+
+  /* ---------- alert banners ---------- */
+  .banner{border-radius:16px;padding:1rem 1.2rem;display:none;align-items:center;gap:.8rem;margin-bottom:.8rem;}
+  .banner.show{display:flex;}
+  .banner .btxt b{display:block;font-family:'Unbounded';font-size:.9rem;}
+  .banner .btxt span{font-size:.78rem;opacity:.85;}
+  .banner.mod{background:#fff1de;border:1.5px solid var(--mod);}
+  .banner.mod b{color:#8a5a1f;}
+  .banner.bad{background:#fde4e1;border:1.5px solid var(--bad);}
+  .banner.bad b{color:#8a2f24;}
+  .banner.predict{background:#e2f2ee;border:1.5px solid #7fb8ab;}
+  .banner.predict b{color:#2c6e5c;}
+
+  /* ---------- metrics ---------- */
+  .metric-row{display:flex;align-items:center;gap:.7rem;padding:.5rem 0;border-bottom:1px dashed var(--sage);}
+  .metric-row:last-child{border-bottom:none;}
+  .metric-row .mlabel{width:96px;font-size:.78rem;font-weight:600;color:var(--deep);}
+  .metric-row .mbar{flex:1;height:9px;border-radius:99px;background:var(--mist);overflow:hidden;}
+  .metric-row .mbar i{display:block;height:100%;border-radius:99px;transition:width .3s ease,background .3s ease;}
+  .metric-row .mval{width:60px;text-align:right;font-family:'Space Mono';font-size:.72rem;color:#8a6d4d;}
+
+  /* ---------- toggle / controls ---------- */
+  .toggle{display:inline-flex;background:var(--mist);border-radius:99px;padding:3px;gap:2px;}
+  .toggle button{border:none;background:transparent;padding:.4rem 1rem;border-radius:99px;cursor:pointer;
+    font-family:'Space Grotesk';font-weight:600;font-size:.75rem;color:#8a6d4d;transition:all .2s;}
+  .toggle button.on{background:var(--paper);color:var(--deep);box-shadow:0 3px 8px rgba(124,67,34,.15);}
+  .controls{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;margin-top:1rem;}
+  .btn{border:none;cursor:pointer;background:var(--deep);color:var(--cream);border-radius:12px;
+    font-family:'Unbounded';font-weight:600;font-size:.78rem;padding:.75rem 1.3rem;
+    box-shadow:0 8px 20px rgba(124,67,34,.25);transition:transform .15s,background .15s;}
+  .btn:hover{transform:translateY(-2px);background:var(--pine);}
+  .btn.ghost{background:var(--paper);color:var(--deep);border:1.5px solid var(--sage);box-shadow:none;}
+  .btn.stop{background:var(--bad);}
+  .btn.stop:hover{background:#c2554a;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+
+  .fatigue-note{font-family:'Space Mono';font-size:.68rem;color:#a08a72;margin-top:.6rem;}
+</style>
+</head>
+<body>
+  <div class="aurora a1"></div><div class="aurora a2"></div><div class="aurora a3"></div>
+
+  <div class="dash">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">🤖</div>
+        <div><h1>PostureGuard</h1><div class="sub">LIVE · REAL-TIME TRACKING</div></div>
+      </div>
+      <div class="pills">
+        <div class="pill offline" id="connPill"><span class="dot"></span> <span id="connText">Offline</span></div>
+        <a class="navlink" href="dashboard.html">📊 Analytics</a>
+        <a class="navlink" href="calibrate.html">🎯 Recalibrate</a>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- video -->
+      <div class="card c8">
+        <h3>Live posture detection</h3>
+        <div class="csub">skeleton overlay + real-time classification</div>
+        <div class="videowrap" id="videoWrap">
+          <img id="videoImg" alt="Live camera preview" style="display:none;">
+          <div class="empty" id="videoEmpty">Press "Start monitoring" to begin.<br>Camera preview needs the backend to also stream a <code>frame</code> field — see note below the controls.</div>
+          <div class="buffering" id="bufferPill" style="display:none;">Buffer 0/30</div>
+        </div>
+
+        <div class="controls">
+          <button class="btn" id="startBtn">▶ Start monitoring</button>
+          <button class="btn stop" id="stopBtn" style="display:none;">■ Stop</button>
+          <span class="toggle" id="soundToggle">
+            <button class="on" data-v="on">🔊 Sound on</button>
+            <button data-v="off">🔇 Sound off</button>
+          </span>
+          <button class="btn ghost" id="snoozeBtn">😴 Snooze 5 min</button>
+        </div>
+        <div class="fatigue-note" id="fatigueNote"></div>
+      </div>
+
+      <!-- status + confidence -->
+      <div class="card c4">
+        <h3>Current posture</h3>
+        <div class="csub">updates every frame once the model warms up</div>
+        <div class="statuslabel s-none" id="statusLabel">Waiting…</div>
+        <div class="confbar"><div class="fill" id="confFill" style="width:0%;background:var(--sage);"></div></div>
+        <div style="display:flex;justify-content:space-between;font-family:'Space Mono';font-size:.7rem;color:#a08a72;">
+          <span>confidence <b id="confPct" style="color:var(--terra);">—</b></span>
+          <span class="timer" id="sessionTimer">00:00</span>
+        </div>
+      </div>
+
+      <!-- alert banners -->
+      <div class="card c12" id="alertCard" style="display:none;">
+        <div class="banner predict" id="predictBanner"><div class="btxt"><b>⚡ Early warning</b><span id="predictText"></span></div></div>
+        <div class="banner mod" id="modBanner"><div class="btxt"><b>Posture drifting</b><span>Sustained moderate posture — sit straight.</span></div></div>
+        <div class="banner bad" id="badBanner"><div class="btxt"><b>Fix your posture!</b><span id="badTip"></span></div></div>
+      </div>
+
+      <!-- metrics -->
+      <div class="card c7">
+        <h3>Live metrics</h3>
+        <div class="csub">each bar is colored against its own good/moderate/bad threshold</div>
+        <div id="metricsList"></div>
+      </div>
+
+      <!-- baseline gauge -->
+      <div class="card c5">
+        <h3>Distance from your calibrated baseline</h3>
+        <div class="csub">head-forward + torso-lean, averaged, live</div>
+        <div class="gauge"><div class="mark" id="gaugeMark" style="left:8%"></div></div>
+        <div class="glabels"><span>on baseline</span><span>+5°</span><span>+10°</span><span>slouching hard</span></div>
+        <div style="font-size:.8rem;margin-top:1rem;color:var(--deep);font-weight:600;" id="baseText">Waiting for data…</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =====================================================================
+   Matches flask_server.py's ACTUAL current payload:
+   { timestamp, person_detected, class, class_name, confidence, metrics,
+     alert: null | {type:'bad'|'moderate', message, tip?}, color }
+   No `frame` field exists yet server-side — the video element stays in
+   its empty state until the backend also base64-encodes and emits the
+   frame. If/when it does, set data.frame and this page will render it
+   with zero other changes (see the `if (data.frame)` check below).
+   No predictive-warning or fatigue fields exist yet either — this page
+   is wired to show them the moment the backend adds
+   data.predict_warning / data.fatigue_msg, and stays hidden until then.
+===================================================================== */
+
+const METRIC_DEFS = [
+  {key:'head_forward',   label:'Head fwd', unit:'', mod:0.03, bad:0.06, tip:'Tuck chin back — ears over shoulders'},
+  {key:'shoulder_asym',  label:'Shoulder', unit:'', mod:0.03, bad:0.06, tip:'Level your shoulders — roll them back'},
+  {key:'spinal_offset',  label:'Spinal',   unit:'', mod:0.04, bad:0.08, tip:'Centre your spine — sit over sit bones'},
+  {key:'neck_angle_deg', label:'Neck',     unit:'°', mod:15,  bad:25,  tip:'Raise your gaze — lift screen to eye level'},
+  {key:'torso_lean_deg', label:'Torso',    unit:'°', mod:10,  bad:18,  tip:'Straighten back — press lumbar into chair'},
+];
+const COLOR = {good:'#8fbf7f', mod:'#eda45f', bad:'#d96a5f'};
+const BAD_SUSTAIN_S = 5, MOD_SUSTAIN_S = 15, BEEP_COOLDOWN_S = 10;
+
+let socket, sessionStart = null, timerInterval = null;
+let badStart = null, modStart = null, lastBeep = 0, snoozeUntil = 0;
+let soundOn = true;
+
+const el = id => document.getElementById(id);
+const connPill=el('connPill'), connText=el('connText');
+const videoImg=el('videoImg'), videoEmpty=el('videoEmpty'), bufferPill=el('bufferPill');
+const startBtn=el('startBtn'), stopBtn=el('stopBtn'), snoozeBtn=el('snoozeBtn');
+const statusLabel=el('statusLabel'), confFill=el('confFill'), confPct=el('confPct'), sessionTimer=el('sessionTimer');
+const alertCard=el('alertCard'), predictBanner=el('predictBanner'), predictText=el('predictText');
+const modBanner=el('modBanner'), badBanner=el('badBanner'), badTip=el('badTip');
+const metricsList=el('metricsList'), gaugeMark=el('gaugeMark'), baseText=el('baseText'), fatigueNote=el('fatigueNote');
+
+METRIC_DEFS.forEach(m=>{
+  metricsList.insertAdjacentHTML('beforeend',
+    `<div class="metric-row"><span class="mlabel">${m.label}</span>
+     <div class="mbar"><i id="bar-${m.key}" style="width:0%;background:var(--sage);"></i></div>
+     <span class="mval" id="val-${m.key}">--${m.unit}</span></div>`);
+});
+
+function worstMetric(metrics){
+  let bestKey='neck_angle_deg', bestRatio=0;
+  METRIC_DEFS.forEach(m=>{
+    const v = Math.abs(metrics[m.key] ?? 0);
+    const ratio = v / (m.bad || 1e-6);
+    if(ratio > bestRatio){ bestRatio = ratio; bestKey = m.key; }
+  });
+  return METRIC_DEFS.find(m=>m.key===bestKey);
+}
+
+function beep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.frequency.value = 880; osc.connect(gain); gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    osc.start(); osc.stop(ctx.currentTime + 0.4);
+  }catch(e){}
+}
+
+function fmtTime(s){ const m=Math.floor(s/60), r=Math.floor(s%60); return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; }
+
+function connectSocket(){
+  socket = io();
+  socket.on('connect', ()=>{ connPill.className='pill live'; connText.textContent='Connected'; });
+  socket.on('disconnect', ()=>{ connPill.className='pill offline'; connText.textContent='Offline'; });
+  socket.on('error', d=>{ videoEmpty.textContent = 'Error: ' + (d.message||'unknown'); });
+  socket.on('detection_stopped', ()=>{ resetToStopped(); });
+  socket.on('posture_update', handleUpdate);
+}
+
+function handleUpdate(data){
+  const now = Date.now()/1000;
+
+  if(data.frame){
+    videoImg.src = 'data:image/jpeg;base64,' + data.frame;
+    videoImg.style.display='block'; videoEmpty.style.display='none';
+  }
+
+  if(!data.person_detected){
+    statusLabel.className='statuslabel s-none'; statusLabel.textContent='No person detected';
+    badStart = modStart = null;
+    bufferPill.style.display='none';
+    return;
+  }
+
+  const haveClass = data.class >= 0;
+  bufferPill.style.display = haveClass ? 'none' : 'block';
+
+  if(haveClass){
+    const cls = data.class, conf = data.confidence || 0;
+    const clsClass = cls===0?'s-good':cls===1?'s-mod':'s-bad';
+    const clsColor  = cls===0?COLOR.good:cls===1?COLOR.mod:COLOR.bad;
+    statusLabel.className = 'statuslabel ' + clsClass;
+    statusLabel.textContent = data.class_name || '—';
+    confFill.style.width = (conf*100).toFixed(0)+'%';
+    confFill.style.background = clsColor;
+    confPct.textContent = (conf*100).toFixed(0)+'%';
+
+    if(cls===2){ badStart = badStart || now; modStart = null; }
+    else if(cls===1){ modStart = modStart || now; badStart = null; }
+    else { badStart = modStart = null; }
+  }
+
+  if(data.metrics){
+    let sumAbs = 0, count = 0;
+    METRIC_DEFS.forEach(m=>{
+      const v = data.metrics[m.key];
+      if(v===undefined) return;
+      const bar = el('bar-'+m.key), val = el('val-'+m.key);
+      const av = Math.abs(v);
+      const color = av < m.mod ? COLOR.good : av < m.bad ? COLOR.mod : COLOR.bad;
+      bar.style.width = Math.min(100, (av/m.bad)*70).toFixed(0)+'%';
+      bar.style.background = color;
+      val.textContent = (v>=0?'+':'')+v.toFixed(3).replace(/0+$/,'').replace(/\.$/,'')+m.unit;
+      if(m.key==='head_forward' || m.key==='torso_lean_deg'){ sumAbs += av; count++; }
+    });
+    if(count){
+      const driftDeg = (sumAbs/count) * (METRIC_DEFS.find(m=>m.key==='torso_lean_deg').bad/1); // rough live proxy
+      const pct = Math.min(96, Math.max(4, (driftDeg/12)*100));
+      gaugeMark.style.left = pct+'%';
+      baseText.textContent = driftDeg<=3 ? '✨ Close to your calibrated baseline.'
+        : driftDeg<=7 ? '👍 Some drift — a quick reset would help.'
+        : '🪑 Drifted well past baseline — consider recalibrating.';
+    }
+  }
+
+  // predictive + fatigue fields — hidden until the backend adds them
+  if(data.predict_warning){
+    predictText.textContent = data.predict_warning;
+    predictBanner.classList.add('show'); alertCard.style.display='block';
+  } else { predictBanner.classList.remove('show'); }
+  fatigueNote.textContent = data.fatigue_msg || '';
+
+  // sustained-duration alert escalation (client-side, matches realtime_posture.py's 5s/15s)
+  const snoozed = now < snoozeUntil;
+  const badDur = badStart ? now-badStart : 0, modDur = modStart ? now-modStart : 0;
+  const badAlert = badDur >= BAD_SUSTAIN_S && !snoozed;
+  const modAlert = !badAlert && modDur >= MOD_SUSTAIN_S && !snoozed;
+
+  badBanner.classList.toggle('show', badAlert);
+  modBanner.classList.toggle('show', modAlert);
+  alertCard.style.display = (badAlert||modAlert||predictBanner.classList.contains('show')) ? 'block' : 'none';
+
+  if(badAlert){
+    const wm = worstMetric(data.metrics||{});
+    badTip.textContent = wm.tip;
+    if(soundOn && (now-lastBeep) > BEEP_COOLDOWN_S){ beep(); lastBeep = now; }
+  }
+}
+
+function resetToStopped(){
+  startBtn.style.display='inline-block'; stopBtn.style.display='none';
+  videoImg.style.display='none'; videoEmpty.style.display='flex';
+  videoEmpty.textContent='Session stopped.';
+  clearInterval(timerInterval);
+  statusLabel.className='statuslabel s-none'; statusLabel.textContent='Waiting…';
+  badStart = modStart = null;
+  badBanner.classList.remove('show'); modBanner.classList.remove('show'); alertCard.style.display='none';
+}
+
+startBtn.onclick = ()=>{
+  if(!socket) connectSocket();
+  socket.emit('start_detection');
+  startBtn.style.display='none'; stopBtn.style.display='inline-block';
+  videoEmpty.textContent='Waiting for first frame…';
+  sessionStart = Date.now()/1000;
+  timerInterval = setInterval(()=>{ sessionTimer.textContent = fmtTime(Date.now()/1000 - sessionStart); }, 1000);
+};
+stopBtn.onclick = ()=>{ socket.emit('stop_detection'); resetToStopped(); };
+
+el('soundToggle').addEventListener('click', e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  document.querySelectorAll('#soundToggle button').forEach(b=>b.classList.remove('on'));
+  e.target.classList.add('on');
+  soundOn = e.target.dataset.v === 'on';
+});
+snoozeBtn.onclick = ()=>{
+  snoozeUntil = Date.now()/1000 + 300;
+  snoozeBtn.textContent = '😴 Snoozed';
+  setTimeout(()=>{ snoozeBtn.textContent='😴 Snooze 5 min'; }, 300000);
+};
+
+connectSocket();
+</script>
+</body>
+</html>

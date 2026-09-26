@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PostureGuard — Sit tall.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Space+Grotesk:wght@400;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1d1421;
+    --cream:#fff7ec;
+    --plum:#4a2438;
+    --berry:#8e3a5d;
+    --coral:#ff6b6b;
+    --sun:#ffc93c;
+    --mint:#7ae0b8;
+    --sky:#6ea8fe;
+    --lav:#c8b6ff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    font-family:'Space Grotesk',system-ui,sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    overflow:hidden;
+    position:relative;
+  }
+
+  /* ---------- animated blob background ---------- */
+  .blob{
+    position:absolute;border-radius:50%;filter:blur(90px);
+    opacity:.55;pointer-events:none;z-index:0;
+    animation:drift 22s ease-in-out infinite alternate;
+  }
+  .b1{width:520px;height:520px;background:var(--coral);top:-140px;left:-120px;}
+  .b2{width:460px;height:460px;background:var(--sun);bottom:-160px;left:32%;animation-delay:-6s;}
+  .b3{width:560px;height:560px;background:var(--lav);top:-100px;right:-160px;animation-delay:-12s;}
+  .b4{width:380px;height:380px;background:var(--mint);bottom:-120px;right:18%;animation-delay:-3s;}
+  @keyframes drift{
+    from{transform:translate(0,0) scale(1);}
+    to{transform:translate(70px,-50px) scale(1.15);}
+  }
+  /* grain */
+  body::after{
+    content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- marquee ticker ---------- */
+  .ticker{
+    position:fixed;top:0;left:0;right:0;z-index:20;
+    background:var(--ink);color:var(--cream);
+    overflow:hidden;white-space:nowrap;
+    font-family:'Space Mono',monospace;font-size:.78rem;letter-spacing:.12em;
+    padding:.55rem 0;
+  }
+  .ticker-track{display:inline-block;animation:marquee 26s linear infinite;}
+  .ticker span{margin:0 1.4rem;}
+  .ticker .dot{color:var(--sun);}
+  @keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  /* ---------- layout ---------- */
+  .stage{
+    position:relative;z-index:10;height:100vh;
+    display:grid;grid-template-columns:1.15fr .85fr;gap:2rem;
+    padding:4.5rem 4rem 2.5rem;max-width:1400px;margin:0 auto;
+    align-items:center;
+  }
+
+  /* ---------- left hero ---------- */
+  .hero{position:relative;padding-right:2rem;}
+  .badge{
+    display:inline-flex;align-items:center;gap:.5rem;
+    background:#fff;border:1.5px solid var(--ink);border-radius:999px;
+    padding:.4rem 1rem;font-size:.8rem;font-weight:700;
+    box-shadow:3px 3px 0 var(--ink);
+    animation:bob 4s ease-in-out infinite;
+  }
+  .badge .pulse{width:9px;height:9px;border-radius:50%;background:var(--mint);
+    box-shadow:0 0 0 0 rgba(122,224,184,.7);animation:pulse 1.8s infinite;}
+  @keyframes pulse{70%{box-shadow:0 0 0 9px rgba(122,224,184,0);}100%{box-shadow:0 0 0 0 rgba(122,224,184,0);}}
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+
+  h1.display{
+    font-family:'Unbounded',sans-serif;
+    font-weight:900;line-height:.98;letter-spacing:-.01em;
+    font-size:clamp(2.6rem,5.4vw,4.6rem);
+    margin:1.4rem 0 1.2rem;text-transform:uppercase;
+  }
+  h1 .outline{
+    color:transparent;-webkit-text-stroke:2px var(--ink);
+    display:inline-block;
+    animation:slidewave 5s ease-in-out infinite;
+  }
+  h1 .sun{background:var(--sun);border:2px solid var(--ink);border-radius:14px;
+    padding:0 .35rem;display:inline-block;transform:rotate(-2deg);
+    box-shadow:4px 4px 0 var(--ink);}
+  @keyframes slidewave{0%,100%{transform:translateX(0);}50%{transform:translateX(10px);}}
+  .sub{max-width:34ch;font-size:1.05rem;opacity:.8;font-weight:500;}
+
+  /* spine character */
+  .spine-wrap{position:relative;margin-top:2rem;height:190px;width:250px;}
+  .spine{width:120px;height:190px;position:relative;animation:sway 3.2s ease-in-out infinite;transform-origin:bottom center;}
+  @keyframes sway{0%,100%{transform:rotate(-4deg);}50%{transform:rotate(4deg);}}
+  .vertebra{
+    position:absolute;left:50%;transform:translateX(-50%);
+    background:#fff;border:2.5px solid var(--ink);border-radius:999px;
+    box-shadow:3px 3px 0 var(--ink);
+  }
+  .v1{width:44px;height:22px;top:0;}
+  .v2{width:48px;height:22px;top:28px;}
+  .v3{width:48px;height:22px;top:56px;}
+  .v4{width:44px;height:22px;top:84px;}
+  .v5{width:40px;height:22px;top:112px;}
+  .head{
+    position:absolute;top:-52px;left:50%;transform:translateX(-50%);
+    width:54px;height:48px;background:var(--sun);border:2.5px solid var(--ink);
+    border-radius:16px;box-shadow:3px 3px 0 var(--ink);
+  }
+  .head::before,.head::after{
+    content:"";position:absolute;top:18px;width:7px;height:9px;border-radius:50%;background:var(--ink);
+  }
+  .head::before{left:12px;} .head::after{right:12px;}
+  .smile{position:absolute;left:50%;bottom:9px;transform:translateX(-50%);
+    width:16px;height:8px;border:2.5px solid var(--ink);border-top:none;border-radius:0 0 12px 12px;}
+  .zl{position:absolute;font-family:'Space Mono';font-weight:700;color:var(--berry);animation:zzz 3s ease-in-out infinite;}
+  .zl1{top:-78px;left:64%;font-size:1rem;}
+  .zl2{top:-96px;left:76%;font-size:1.3rem;animation-delay:.5s;}
+  @keyframes zzz{0%,100%{opacity:.25;transform:translateY(0);}50%{opacity:1;transform:translateY(-8px);}}
+
+  /* floating chips */
+  .chip{
+    position:absolute;background:#fff;border:2px solid var(--ink);border-radius:16px;
+    padding:.55rem .9rem;font-weight:700;font-size:.82rem;
+    box-shadow:4px 4px 0 var(--ink);display:flex;align-items:center;gap:.45rem;
+  }
+  .c1{top:6%;right:12%;transform:rotate(6deg);animation:bob 3.4s ease-in-out infinite;}
+  .c2{bottom:16%;right:2%;transform:rotate(-5deg);animation:bob 4.4s ease-in-out infinite .6s;}
+  .c3{top:44%;right:30%;transform:rotate(3deg);animation:bob 5s ease-in-out infinite .3s;}
+  .scorebar{width:78px;height:8px;border-radius:99px;background:#eee;overflow:hidden;}
+  .scorebar i{display:block;height:100%;width:92%;background:linear-gradient(90deg,var(--mint),var(--sky));animation:fill 2.4s ease-in-out infinite alternate;}
+  @keyframes fill{from{width:78%;}to{width:96%;}}
+
+  /* rotating text ring */
+  .ring{position:absolute;bottom:-6%;left:-4%;width:130px;height:130px;animation:spin 14s linear infinite;opacity:.9;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- right: login card ---------- */
+  .card-zone{display:flex;justify-content:center;position:relative;}
+  .glow{
+    position:absolute;width:120%;height:70%;top:15%;left:-10%;z-index:-1;
+    background:radial-gradient(circle,rgba(255,107,107,.35),transparent 65%);
+    filter:blur(40px);
+  }
+  .card{
+    width:min(420px,100%);
+    background:#fff;border:2.5px solid var(--ink);border-radius:28px;
+    box-shadow:10px 10px 0 var(--ink);
+    padding:2.4rem 2.2rem 2rem;position:relative;
+    transition:transform .25s ease;
+    will-change:transform;
+  }
+  .mascot{
+    width:74px;height:74px;margin:-4.5rem auto 1rem;
+    background:var(--lav);border:2.5px solid var(--ink);border-radius:22px;
+    display:flex;align-items:center;justify-content:center;font-size:2.2rem;
+    box-shadow:5px 5px 0 var(--ink);transform:rotate(-4deg);
+    animation:bob 3.6s ease-in-out infinite;
+  }
+  .card h2{font-family:'Unbounded';font-size:1.35rem;text-align:center;letter-spacing:-.01em;}
+  .card .tagline{text-align:center;color:#8b7f86;font-size:.9rem;margin:.4rem 0 1.6rem;}
+
+  .field{position:relative;margin-bottom:1.15rem;}
+  .field label{display:block;font-weight:700;font-size:.85rem;margin-bottom:.4rem;}
+  .field input{
+    width:100%;padding:.95rem 2.8rem .95rem 1.05rem;
+    border:2px solid var(--ink);border-radius:14px;background:var(--cream);
+    font-family:'Space Grotesk';font-size:.95rem;font-weight:500;
+    transition:box-shadow .2s,transform .2s,background .2s;
+  }
+  .field input:focus{outline:none;background:#fff;box-shadow:4px 4px 0 var(--ink);transform:translate(-2px,-2px);}
+  .field .icon{position:absolute;right:1rem;bottom:.95rem;font-size:1.05rem;opacity:.55;pointer-events:none;}
+  .eye{position:absolute;right:.8rem;bottom:.7rem;background:none;border:none;cursor:pointer;font-size:1.1rem;}
+  .hint{font-size:.72rem;color:#a79aa1;margin-top:.3rem;min-height:1em;transition:color .2s;}
+  .hint.ok{color:#1e9e6a;}
+
+  .btn{
+    width:100%;margin-top:.4rem;padding:1rem;border:none;cursor:pointer;
+    background:var(--plum);color:var(--cream);border:2.5px solid var(--ink);
+    border-radius:16px;font-family:'Unbounded';font-weight:600;font-size:.95rem;
+    box-shadow:5px 5px 0 var(--ink);position:relative;overflow:hidden;
+    transition:transform .15s,box-shadow .15s;
+  }
+  .btn:hover{transform:translate(-2px,-2px);box-shadow:7px 7px 0 var(--ink);background:var(--berry);}
+  .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink);}
+  .btn .shine{
+    position:absolute;top:0;left:-80%;width:50%;height:100%;
+    background:linear-gradient(105deg,transparent,rgba(255,255,255,.35),transparent);
+    animation:shine 3s ease-in-out infinite;
+  }
+  @keyframes shine{0%{left:-80%;}55%,100%{left:130%;}}
+  .btn.done{background:var(--mint);color:var(--ink);}
+
+  .foot{text-align:center;font-size:.8rem;color:#8b7f86;margin-top:1.2rem;line-height:1.5;}
+  .foot b{color:var(--ink);}
+
+  /* confetti */
+  .confetti{position:fixed;width:10px;height:10px;z-index:50;pointer-events:none;border-radius:2px;}
+
+  /* responsive */
+  @media (max-width:900px){
+    body{overflow:auto;}
+    .stage{grid-template-columns:1fr;padding:5rem 1.4rem 3rem;height:auto;gap:3.5rem;}
+    .hero{padding-right:0;}
+    .spine-wrap{margin-top:2.5rem;}
+    .chip{display:none;}
+    .card{margin-top:1rem;}
+  }
+</style>
+</head>
+<body>
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="blob b3"></div><div class="blob b4"></div>
+
+  <div class="ticker"><div class="ticker-track" id="tickerTrack"></div></div>
+
+  <main class="stage">
+    <!-- LEFT -->
+    <section class="hero">
+      <span class="badge"><span class="pulse"></span> AI posture coach · live</span>
+      <h1 class="display">
+        Sit <span class="sun">tall.</span><br>
+        Feel <span class="outline">great.</span>
+      </h1>
+      <p class="sub">PostureGuard watches your slouch in real time and nudges you back to your best self. No wearables. No fuss.</p>
+
+      <div class="spine-wrap">
+        <div class="spine">
+          <div class="head"><div class="smile"></div></div>
+          <span class="zl zl1">z</span><span class="zl zl2">z</span>
+          <div class="vertebra v1"></div><div class="vertebra v2"></div>
+          <div class="vertebra v3"></div><div class="vertebra v4"></div>
+          <div class="vertebra v5"></div>
+        </div>
+        <div class="chip c1">🏆 12-day streak</div>
+        <div class="chip c2"><span class="scorebar"><i></i></span> 92% upright</div>
+        <div class="chip c3">📸 calibrated</div>
+      </div>
+
+      <svg class="ring" viewBox="0 0 130 130">
+        <defs><path id="circ" d="M65,65 m-48,0 a48,48 0 1,1 96,0 a48,48 0 1,1 -96,0"/></defs>
+        <text font-family="Space Mono" font-size="12.5" letter-spacing="3.5" fill="#4a2438">
+          <textPath href="#circ">STRAIGHT BACK • STRONG YOU •</textPath>
+        </text>
+        <circle cx="65" cy="65" r="8" fill="#ffc93c" stroke="#1d1421" stroke-width="2.5"/>
+      </svg>
+    </section>
+
+    <!-- RIGHT -->
+    <section class="card-zone">
+      <div class="glow" id="glow"></div>
+      <form class="card" id="loginCard" autocomplete="off">
+        <div class="mascot">🤖</div>
+        <h2>PostureGuard</h2>
+        <p class="tagline">Your posture, perfected.</p>
+
+        <div class="field">
+          <label for="user">Username</label>
+          <input id="user" type="text" placeholder="Enter your username" required>
+          <span class="icon">👤</span>
+        </div>
+
+        <div class="field">
+          <label for="pass">Password</label>
+          <input id="pass" type="password" placeholder="Enter your password" required>
+          <button type="button" class="eye" id="eye" aria-label="Show password">🙈</button>
+        </div>
+        <div class="hint" id="hint">💡 New user? Just sign in — we'll create your account automatically.</div>
+
+        <button class="btn" type="submit" id="btn">
+          <span class="shine"></span><span id="btnText">🚀 Get Started</span>
+        </button>
+
+        <p class="foot">First time? You'll <b>calibrate your posture</b> next.<br>Straight backs only beyond this point. 😉</p>
+      </form>
+    </section>
+  </main>
+
+<script>
+  /* marquee */
+  const items = ['SIT TALL','ROLL THOSE SHOULDERS BACK','EYES LEVEL WITH THE SCREEN','CHIN UP, CHAMP','STRETCH BREAK IN 3… 2…','HYDRATE YOUR SPINE'];
+  const half = items.map(t=>`<span>${t}</span><span class="dot">●</span>`).join('');
+  document.getElementById('tickerTrack').innerHTML = half + half;
+
+  /* password toggle */
+  const pass = document.getElementById('pass'), eye = document.getElementById('eye');
+  eye.addEventListener('click', ()=>{
+    const show = pass.type === 'password';
+    pass.type = show ? 'text' : 'password';
+    eye.textContent = show ? '🐵' : '🙈';
+  });
+
+  /* card tilt + glow follows mouse */
+  const card = document.getElementById('loginCard'), glow = document.getElementById('glow');
+  const zone = card.parentElement;
+  zone.addEventListener('mousemove', e=>{
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left)/r.width - .5;
+    const y = (e.clientY - r.top)/r.height - .5;
+    card.style.transform = `perspective(900px) rotateY(${x*7}deg) rotateX(${-y*7}deg)`;
+    glow.style.transform = `translate(${x*40}px,${y*30}px)`;
+  });
+  zone.addEventListener('mouseleave', ()=>{ card.style.transform=''; glow.style.transform=''; });
+
+  /* confetti on submit */
+  function confetti(){
+    const colors = ['#ff6b6b','#ffc93c','#7ae0b8','#6ea8fe','#c8b6ff','#8e3a5d'];
+    for(let i=0;i<70;i++){
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.background = colors[i % colors.length];
+      c.style.left = (35 + Math.random()*30) + 'vw';
+      c.style.top = '45vh';
+      document.body.appendChild(c);
+      const dx = (Math.random()-.5)*500, dy = -(Math.random()*420+80), rot = Math.random()*900;
+      c.animate([
+        {transform:'translate(0,0) rotate(0deg)',opacity:1},
+        {transform:`translate(${dx}px,${dy+300}px) rotate(${rot}deg)`,opacity:0}
+      ],{duration:1400+Math.random()*900,easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish = ()=>c.remove();
+    }
+  }
+
+  document.getElementById('loginCard').addEventListener('submit', e=>{
+    e.preventDefault();
+    const btn = document.getElementById('btn'), txt = document.getElementById('btnText');
+    const hint = document.getElementById('hint');
+    txt.textContent = '⏳ Checking your stance…';
+    btn.disabled = true;
+    setTimeout(()=>{
+      txt.textContent = '✅ Looking upright!';
+      btn.classList.add('done');
+      hint.textContent = '🎉 Welcome! Redirecting to calibration…';
+      hint.classList.add('ok');
+      confetti();
+      setTimeout(()=>{ /* window.location.href = 'calibrate.html'; */ }, 1600);
+    }, 1100);
+  });
+</script>
+</body>
+</html>
