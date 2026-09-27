@@ -4,3 +4,7 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+postureguard.db
+users.json
+sessions/
+user_baseline.json

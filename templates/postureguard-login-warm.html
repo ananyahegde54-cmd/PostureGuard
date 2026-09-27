@@ -187,6 +187,7 @@
   .eye{position:absolute;right:.7rem;bottom:.6rem;background:none;border:none;cursor:pointer;font-size:1rem;}
   .note{font-size:.74rem;color:#9db5a9;text-align:center;margin-bottom:1.1rem;min-height:1.1em;transition:color .3s;}
   .note.ok{color:var(--aqua-deep);font-weight:600;}
+  .note.err{color:#c0392b;font-weight:600;}
   .btn{width:100%;padding:.95rem;border:none;cursor:pointer;background:var(--deep);color:var(--cream);
     border-radius:14px;font-family:'Unbounded';font-weight:600;font-size:.85rem;letter-spacing:.04em;
     box-shadow:0 10px 26px rgba(30,77,59,.28);position:relative;overflow:hidden;
@@ -300,7 +301,7 @@
         <input id="pass" type="password" placeholder="Enter your password" required>
         <button type="button" class="eye" id="eye">🙈</button>
       </div>
-      <div class="note" id="note">💡 New here? One sign-in creates your account.</div>
+      <div class="note" id="note">💡 New here? Just log in — your account is created automatically.</div>
 
       <button class="btn" type="submit" id="btn"><span class="shine"></span><span id="btnText">Get Started →</span></button>
       <p class="foot">First time? You'll <b>calibrate your posture</b> next.<br>Chin up. Shoulders back. 🌿</p>
@@ -390,25 +391,44 @@
     pass.type=show?'text':'password';eyeBtn.textContent=show?'🐵':'🙈';
   });
 
-  /* submit → crumple → fly → next page */
-  document.getElementById('sheet').addEventListener('submit',e=>{
+  /* submit → real login check → crumple → fly → next page */
+  document.getElementById('sheet').addEventListener('submit',async e=>{
     e.preventDefault();
     const btn=document.getElementById('btn'),txt=document.getElementById('btnText'),note=document.getElementById('note');
+    const username=document.getElementById('user').value.trim();
+    const password=document.getElementById('pass').value;
     txt.textContent='⏳ Checking your stance…';btn.disabled=true;
+
+    let result;
+    try{
+      const resp=await fetch('/api/login',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({username,password})
+      });
+      result=await resp.json();
+    }catch(err){
+      result={ok:false,error:'Cannot reach server — is app.py running?'};
+    }
+
+    if(!result.ok){
+      txt.textContent='Get Started →';btn.disabled=false;
+      note.textContent='⚠ '+(result.error||'Login failed');note.classList.add('err');
+      return;
+    }
+
+    txt.textContent='✅ Upright & verified';btn.classList.add('done');
+    note.textContent='🌿 Welcome back. Folding you in…';note.classList.add('ok');
     setTimeout(()=>{
-      txt.textContent='✅ Upright & verified';btn.classList.add('done');
-      note.textContent='🌿 Welcome back. Folding you in…';note.classList.add('ok');
+      const sheet=document.getElementById('sheet');
+      sheet.classList.add('crumple');                    /* crumple into a ball */
       setTimeout(()=>{
-        const sheet=document.getElementById('sheet');
-        sheet.classList.add('crumple');                    /* crumple into a ball */
-        setTimeout(()=>{
-          planeScene.style.pointerEvents='none';
-          planeScene.style.opacity='1';                   /* ball becomes plane */
-          planeScene.classList.add('launch');             /* …and flies off */
-          setTimeout(()=>{ window.location.href=NEXT_PAGE; },1000);
-        },900);
+        planeScene.style.pointerEvents='none';
+        planeScene.style.opacity='1';                   /* ball becomes plane */
+        planeScene.classList.add('launch');             /* …and flies off */
+        setTimeout(()=>{ window.location.href=result.redirect||NEXT_PAGE; },1000);
       },900);
-    },1200);
+    },900);
   });
 </script>
 </body>

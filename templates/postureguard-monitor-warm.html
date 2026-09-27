@@ -25,7 +25,6 @@
 
   .wrap{position:relative;z-index:5;max-width:1320px;margin:0 auto;padding:1.4rem 2rem 3rem;}
 
-  /* ---------- top bar ---------- */
   .topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.3rem;}
   .brand{display:flex;align-items:center;gap:.75rem;}
   .brand .logo{width:44px;height:44px;border-radius:14px;background:var(--paper);border:1.5px solid var(--sage);
@@ -45,17 +44,14 @@
   .btn.ghost{background:var(--paper);color:var(--deep);border:1.5px solid var(--sage);box-shadow:none;}
   .btn.snoozed{background:var(--sand);color:var(--pine);}
 
-  /* ---------- layout ---------- */
   .grid{display:grid;grid-template-columns:1.5fr 1fr;gap:1.3rem;}
   .card{background:var(--paper);border:1.5px solid var(--sage);border-radius:20px;padding:1.2rem 1.3rem;
     box-shadow:0 12px 30px rgba(124,67,34,.10);}
 
-  /* video */
   .video-card{padding:.9rem;}
   .video-frame{position:relative;border-radius:14px;overflow:hidden;background:#17110d;aspect-ratio:4/3;}
-  .video-frame img{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1);} /* mirror like a selfie */
+  .video-frame img{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1);}
   .cam-off{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;color:#c9b8a6;font-size:.9rem;}
-  /* web overlay banners */
   .overlay{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:.5rem;
     font-weight:700;font-size:.95rem;letter-spacing:.02em;padding:.85rem;
     transform:translateY(-110%);transition:transform .35s cubic-bezier(.34,1.3,.64,1);z-index:5;}
@@ -70,7 +66,6 @@
     font-family:'Space Mono';font-size:.68rem;padding:.3rem .7rem;border-radius:99px;z-index:6;display:none;}
   .snooze-chip.show{display:block;}
 
-  /* class banner under video */
   .status-row{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.9rem;flex-wrap:wrap;}
   .status-chip{font-family:'Unbounded';font-weight:800;font-size:.95rem;padding:.6rem 1.2rem;border-radius:14px;
     transition:all .35s;letter-spacing:.02em;}
@@ -85,7 +80,6 @@
   .conf .bar i{display:block;height:100%;border-radius:99px;background:var(--terra);width:0;transition:width .4s;}
   .fatigue{font-size:.72rem;color:#a08a72;margin-top:.5rem;font-style:italic;min-height:1em;}
 
-  /* ---------- side panel ---------- */
   .side{display:flex;flex-direction:column;gap:1.3rem;}
   .side h3{font-family:'Unbounded';font-size:.8rem;color:var(--deep);margin-bottom:.9rem;display:flex;justify-content:space-between;align-items:center;}
   .side h3 .mini{font-family:'Space Mono';font-size:.58rem;letter-spacing:.18em;color:var(--terra);}
@@ -111,7 +105,6 @@
   .flow-row{display:flex;justify-content:space-between;font-family:'Space Mono';font-size:.7rem;color:#8a6d4d;margin-top:.4rem;}
   .flow-row b{color:var(--deep);}
 
-  /* summary overlay */
   .summary{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
     background:rgba(51,39,30,.45);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .35s;}
   .summary.open{opacity:1;pointer-events:auto;}
@@ -146,11 +139,12 @@
         <div class="pill" id="baselinePill" style="display:none">📐 personalised thresholds</div>
         <button class="btn ghost" id="btnSnooze">😴 Snooze 5m</button>
         <button class="btn" id="btnStop">■ End session</button>
+        <button class="btn ghost" id="btnFloat">📌 Float on top</button>
+        <a class="btn ghost" href="/dashboard" style="text-decoration:none;display:inline-flex;align-items:center;">📊 Dashboard</a>
       </div>
     </header>
 
     <div class="grid">
-      <!-- VIDEO -->
       <div class="card video-card">
         <div class="video-frame">
           <img id="feed" src="/video_feed" alt="live posture feed"
@@ -175,7 +169,6 @@
         </div>
       </div>
 
-      <!-- SIDE -->
       <div class="side">
         <div class="card">
           <h3>Live metrics <span class="mini" id="bufMini">buffer 0/30</span></h3>
@@ -194,7 +187,6 @@
     </div>
   </div>
 
-  <!-- session summary -->
   <div class="summary" id="summary">
     <div class="panel">
       <div class="face" id="sumFace">🌿</div>
@@ -203,7 +195,7 @@
       <div class="splits"><i id="sg" class="i-good" style="background:var(--good)"></i><i id="sm" style="background:var(--mod)"></i><i id="sb" style="background:var(--bad)"></i></div>
       <div class="slabels"><span id="lg">good —%</span><span id="lm">moderate —%</span><span id="lb">bad —%</span></div>
       <div style="font-size:.8rem;color:#8a6d4d;margin-bottom:1.4rem;" id="sumAlerts"></div>
-      <a class="btn" href="/postureguard-dashboard.html" style="text-decoration:none;display:inline-block;">📊 Open analytics</a>
+      <a class="btn" href="/dashboard" style="text-decoration:none;display:inline-block;">📊 Open analytics</a>
     </div>
   </div>
 
@@ -218,7 +210,6 @@ const METRICS=[
   ['torso_lean_deg','Torso lean',v=>v.toFixed(1)+'°'],
 ];
 
-/* build metric rows once */
 const mEls={};
 $('metrics').innerHTML=METRICS.map(([key,label])=>`
   <div class="metric" id="m_${key}">
@@ -233,19 +224,104 @@ let lastAlertLen=0, stopped=false;
 
 function fmtT(s){s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 
+/* ============================================================
+   FLOATING "FIX YOUR POSTURE" WIDGET
+   Stays visible even when the user switches to a different tab.
+   Uses Chrome's Document Picture-in-Picture window (a real
+   always-on-top OS window) when available; falls back to a
+   plain system Notification on browsers that don't support it
+   (Firefox, Safari).
+============================================================ */
+let pipWindow = null;
+let pipEls = null;
+let lastBadAlert = false;
+let lastNotifyAt = 0;
+
+function buildPipContent(doc){
+  doc.body.innerHTML = `
+    <style>
+      :root{color-scheme:light dark;}
+      body{margin:0;font-family:'Space Grotesk',system-ui,sans-serif;
+        background:#faf2e4;display:flex;flex-direction:column;align-items:center;
+        justify-content:center;height:100vh;gap:.5rem;text-align:center;overflow:hidden;}
+      .mascot{font-size:3.4rem;transition:transform .25s ease;}
+      .mascot.bad{font-size:4.6rem;animation:shake .35s ease-in-out infinite;}
+      @keyframes shake{0%,100%{transform:rotate(-8deg);}50%{transform:rotate(8deg);}}
+      .msg{font-weight:700;font-size:1.05rem;color:#33271e;padding:0 .8rem;}
+      .msg.good{color:#3a8f5c;} .msg.moderate{color:#c0662c;} .msg.bad{color:#c0392b;}
+      .tip{font-size:.8rem;color:#7d6a58;padding:0 1rem;}
+    </style>
+    <div class="mascot" id="pipMascot">🧘</div>
+    <div class="msg good" id="pipMsg">Good posture</div>
+    <div class="tip" id="pipTip"></div>
+  `;
+  return {
+    mascot: doc.getElementById('pipMascot'),
+    msg: doc.getElementById('pipMsg'),
+    tip: doc.getElementById('pipTip'),
+  };
+}
+
+async function openFloatingWidget(){
+  if ('documentPictureInPicture' in window){
+    try{
+      pipWindow = await documentPictureInPicture.requestWindow({width:260,height:180});
+      pipEls = buildPipContent(pipWindow.document);
+      pipWindow.addEventListener('pagehide', ()=>{ pipWindow=null; pipEls=null; });
+      $('btnFloat').textContent='📌 Floating…';
+      return;
+    }catch(e){ console.warn('PiP unavailable, falling back to notifications', e); }
+  }
+  if ('Notification' in window){
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted'){
+      $('btnFloat').textContent='🔔 Alerts on';
+      new Notification('PostureGuard', {body:'You\'ll get a notification if your posture slips while you\'re on another tab.'});
+    }
+  }
+}
+$('btnFloat').addEventListener('click', openFloatingWidget);
+
+function updateFloatingWidget(s){
+  if (pipEls){
+    const bad = !!s.bad_alert, mod = !s.bad_alert && !!s.mod_alert;
+    pipEls.mascot.textContent = bad ? '🚨' : mod ? '🙆' : '🧘';
+    pipEls.mascot.className = 'mascot' + (bad ? ' bad' : '');
+    pipEls.msg.className = 'msg ' + (bad ? 'bad' : mod ? 'moderate' : 'good');
+    pipEls.msg.textContent = bad ? 'FIX YOUR POSTURE!' : mod ? 'Posture drifting…' : 'Good posture';
+    const a = s.alerts && s.alerts[s.alerts.length-1];
+    pipEls.tip.textContent = bad && a ? a.tip : '';
+
+    if (bad && !lastBadAlert){
+      try{ pipWindow.resizeTo(380, 280); }catch(e){}
+      try{ pipWindow.focus(); }catch(e){}
+    } else if (!bad && lastBadAlert){
+      try{ pipWindow.resizeTo(260, 180); }catch(e){}
+    }
+  }
+
+  const nowBad = !!s.bad_alert;
+  if (nowBad && !lastBadAlert && document.hidden && !pipWindow &&
+      'Notification' in window && Notification.permission === 'granted' &&
+      Date.now() - lastNotifyAt > 30000){
+    const a = s.alerts && s.alerts[s.alerts.length-1];
+    new Notification('⚠ Fix your posture!', {body: (a&&a.tip) || 'Sit up straight.'});
+    lastNotifyAt = Date.now();
+  }
+  lastBadAlert = nowBad;
+}
+
 async function tick(){
   if(stopped)return;
   try{
     const s=await (await fetch('/api/state')).json();
 
-    /* camera error */
     if(s.camera_error){$('modeSub').textContent='⚠ '+s.camera_error.toUpperCase();return;}
 
     $('baselinePill').style.display=s.baseline_used?'flex':'none';
     $('timer').textContent=fmtT(s.t);
     $('bufMini').textContent=`buffer ${s.buffer}/${s.seq_len}`;
 
-    /* status chip */
     const chip=$('statusChip');
     if(s.cls_name==='No person detected'){chip.className='status-chip idle';chip.textContent='🙈 No person detected';}
     else if(s.cls_name==='Session ended'){chip.className='status-chip idle';chip.textContent='Session ended';}
@@ -253,27 +329,23 @@ async function tick(){
       chip.className='status-chip '+k;chip.textContent={good:'✅ GOOD POSTURE',moderate:'〰 MODERATE',bad:'⚠ BAD POSTURE'}[k];}
     else{chip.className='status-chip idle';chip.textContent=s.cls_name;}
 
-    /* confidence */
     $('confPct').textContent=Math.round(s.conf*100)+'%';
     $('confBar').style.width=(s.conf*100)+'%';
 
-    /* overlays */
     $('ovBad').classList.toggle('show',!!s.bad_alert);
     $('ovMod').classList.toggle('show',!s.bad_alert&&!!s.mod_alert);
-    if(s.bad_alert&&s.metrics){/* show tip from latest alert if present */
+    if(s.bad_alert&&s.metrics){
       const a=s.alerts&&s.alerts[s.alerts.length-1]; if(a)$('ovTip').textContent=a.tip;}
     $('ovPred').classList.toggle('show',!!s.of_warning&&!s.snoozed);
     if(s.of_warning)$('ovPred').textContent='🔮 PREDICT: '+s.of_warning;
     $('fatigue').textContent=s.fatigue||'';
 
-    /* snooze */
     $('snoozeChip').classList.toggle('show',!!s.snoozed);
     if(s.snoozed)$('snoozeLeft').textContent=fmtT(s.snooze_left_s);
     $('btnSnooze').classList.toggle('snoozed',!!s.snoozed);
     $('btnSnooze').textContent=s.snoozed?'😴 snoozing…':'😴 Snooze 5m';
 
-    /* metrics with threshold ticks */
-    const scale={}; /* map metric → max scale for bar width */
+    const scale={};
     for(const [key,label,fmt] of METRICS){
       const th=s.thresh[key]||{moderate:1,bad:1};
       scale[key]=th.bad*1.6;
@@ -291,7 +363,6 @@ async function tick(){
     $('flowMean').textContent=(s.flow_mean||0).toFixed(4);
     $('badRate').textContent=(s.bad_rate_pct||0).toFixed(0)+'%';
 
-    /* alerts feed */
     if(s.alerts&&s.alerts.length){
       $('alerts').innerHTML=[...s.alerts].reverse().map(a=>`
         <div class="alert-item"><div class="at">⚠ t=${a.t}s · bad ${a.bad_duration}s</div>
@@ -299,8 +370,9 @@ async function tick(){
     }
     $('alertCount').textContent=(s.alerts?s.alerts.length:0)+' shown';
 
-    /* session ended server-side */
     if(!s.running&&s.summary)showSummary(s.summary);
+
+    updateFloatingWidget(s);
   }catch(e){/* server starting up — retry next poll */}
 }
 
@@ -321,6 +393,7 @@ function showSummary(sum){
 $('btnSnooze').onclick=()=>fetch('/api/snooze',{method:'POST'});
 $('btnStop').onclick=async()=>{
   const r=await (await fetch('/api/stop',{method:'POST'})).json();
+  if(pipWindow){ pipWindow.close(); pipWindow=null; pipEls=null; }
   if(r&&r.summary)showSummary(r.summary);
 };
 
