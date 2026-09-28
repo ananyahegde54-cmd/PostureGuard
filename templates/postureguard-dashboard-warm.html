@@ -167,7 +167,7 @@
         <div class="pill">⏱ <b id="totalTime">—</b> tracked</div>
         <button class="btn ghost" id="btnCsv">⬇ CSV</button>
         <button class="btn" id="btnPdf">🖨 Report</button>
-        <a class="btn" href="/monitor" style="text-decoration:none;display:inline-flex;align-items:center;">▶ Start session</a>
+        <a class="btn" id="btnStartSession" href="/monitor" style="text-decoration:none;display:inline-flex;align-items:center;">▶ Start session</a>
         <a class="btn ghost" href="/logout" style="text-decoration:none;display:inline-flex;align-items:center;">Logout</a>
       </div>
     </header>
@@ -436,6 +436,30 @@ function stretch(auto){
 }
 mascot.onclick=()=>stretch(false);
 setInterval(()=>stretch(true),45000); setTimeout(()=>stretch(true),9000);
+
+/* ---------- start session (detection begins ONLY here) ---------- */
+(function(){
+  const btn=document.getElementById('btnStartSession');
+  if(!btn) return;
+  // If a session is already running (e.g. you switched tabs/pages), offer to resume it.
+  fetch('/api/state',{cache:'no-store'}).then(r=>r.json()).then(s=>{
+    if(s && s.monitoring) btn.textContent='▶ Resume session';
+  }).catch(()=>{});
+  btn.addEventListener('click', async e=>{
+    e.preventDefault();
+    if(btn.dataset.busy) return; btn.dataset.busy='1';
+    try{
+      const r=await fetch('/api/start',{method:'POST'});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const j=await r.json();
+      window.location.href=j.redirect||'/monitor';
+    }catch(err){
+      console.error('Could not start session',err);
+      alert('Could not start the session. Is the PostureGuard server running?');
+      delete btn.dataset.busy;
+    }
+  });
+})();
 
 /* ---------- boot ---------- */
 let DATA;

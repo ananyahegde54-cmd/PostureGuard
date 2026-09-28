@@ -8,3 +8,5 @@ postureguard.db
 users.json
 sessions/
 user_baseline.json
+# Local ZIP files
+*.zip

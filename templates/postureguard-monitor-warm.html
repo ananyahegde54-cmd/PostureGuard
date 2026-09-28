@@ -50,7 +50,7 @@
 
   .video-card{padding:.9rem;}
   .video-frame{position:relative;border-radius:14px;overflow:hidden;background:#17110d;aspect-ratio:4/3;}
-  .video-frame img{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1);}
+  .video-frame img{width:100%;height:100%;object-fit:cover;display:block;}
   .cam-off{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;color:#c9b8a6;font-size:.9rem;}
   .overlay{position:absolute;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:.5rem;
     font-weight:700;font-size:.95rem;letter-spacing:.02em;padding:.85rem;
@@ -397,7 +397,19 @@ $('btnStop').onclick=async()=>{
   if(r&&r.summary)showSummary(r.summary);
 };
 
-setInterval(tick,500);tick();
+// Detection runs on the server, so it continues when this tab is in the background.
+// Browsers throttle setInterval in hidden tabs, so drive polling from a Web Worker
+// (not throttled) so bad-posture notifications still arrive on time.
+(function(){
+  let ok=false;
+  try{
+    const w=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},500)'],{type:'text/javascript'})));
+    w.onmessage=tick; ok=true;
+  }catch(e){}
+  if(!ok) setInterval(tick,500);
+})();
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) tick(); });
+tick();
 </script>
 </body>
 </html>

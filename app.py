@@ -5,7 +5,7 @@ Run:   python app.py
 Open:  http://localhost:5000      (Chrome/Edge/Firefox)
 
 Place next to: realtime_posture.py, optical_flow.py,
-               posture_model.pth, user_baseline.json, database.py
+               posture_model.pth, database.py
 Requires:      pip install flask
 """
 
@@ -15,7 +15,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from collections import deque
-import time, json, os, sys, threading, hashlib, glob
+import time, json, os, sys, threading, hashlib, uuid
 from datetime import datetime
 from functools import wraps
 from flask import (Flask, Response, jsonify, request, render_template,
@@ -80,48 +80,44 @@ model.eval()
 print("LSTM model loaded.")
 
 # ── Personal baseline (FR8/FR9) ───────────────────────────
-BASELINE_FILE = "user_baseline.json"
+# Baselines are stored in SQLite per user.  We never use one shared
+# user_baseline.json for all accounts.
 baseline = None
-if os.path.exists(BASELINE_FILE):
-    with open(BASELINE_FILE) as f:
-        baseline = json.load(f).get("metrics", None)
-    print(f"Personal baseline loaded  ({BASELINE_FILE})")
-else:
-    print("No baseline found — using generic thresholds.")
 
-def thr(metric, level, fallback):
-    if baseline and metric in baseline:
-        return baseline[metric][level]
-    return fallback
+def build_thresholds(active_baseline):
+    def value(metric, level, fallback):
+        if active_baseline and metric in active_baseline:
+            return active_baseline[metric].get(level, fallback)
+        return fallback
 
-THRESH = {
-    "head_forward":   {"moderate": thr("head_forward",   "warn_moderate", 0.030),
-                       "bad":      thr("head_forward",   "warn_bad",      0.060)},
-    "shoulder_asym":  {"moderate": thr("shoulder_asym",  "warn_moderate", 0.030),
-                       "bad":      thr("shoulder_asym",  "warn_bad",      0.060)},
-    "spinal_offset":  {"moderate": thr("spinal_offset",  "warn_moderate", 0.040),
-                       "bad":      thr("spinal_offset",  "warn_bad",      0.080)},
-    "neck_angle_deg": {"moderate": thr("neck_angle_deg", "warn_moderate", 15.0),
-                       "bad":      thr("neck_angle_deg", "warn_bad",      25.0)},
-    "torso_lean_deg": {"moderate": thr("torso_lean_deg", "warn_moderate", 10.0),
-                       "bad":      thr("torso_lean_deg", "warn_bad",      18.0)},
-}
+    return {
+        "head_forward":   {"moderate": value("head_forward",   "warn_moderate", 0.030),
+                           "bad":      value("head_forward",   "warn_bad",      0.060)},
+        "shoulder_asym":  {"moderate": value("shoulder_asym",  "warn_moderate", 0.030),
+                           "bad":      value("shoulder_asym",  "warn_bad",      0.060)},
+        "spinal_offset":  {"moderate": value("spinal_offset",  "warn_moderate", 0.040),
+                           "bad":      value("spinal_offset",  "warn_bad",      0.080)},
+        "neck_angle_deg": {"moderate": value("neck_angle_deg", "warn_moderate", 15.0),
+                           "bad":      value("neck_angle_deg", "warn_bad",      25.0)},
+        "torso_lean_deg": {"moderate": value("torso_lean_deg", "warn_moderate", 10.0),
+                           "bad":      value("torso_lean_deg", "warn_bad",      18.0)},
+    }
 
-TIPS = {
-    "head_forward":   "Tuck chin back — ears over shoulders",
-    "shoulder_asym":  "Level your shoulders — roll them back",
-    "spinal_offset":  "Centre your spine — sit over sit bones",
-    "neck_angle_deg": "Raise your gaze — lift screen to eye level",
-    "torso_lean_deg": "Straighten back — press lumbar into chair",
-}
+THRESH = build_thresholds(None)
 
-def worst_metric(m):
-    best_k, best_r = "neck_angle_deg", 0.0
-    for k, v in m.items():
-        r = abs(v) / (THRESH.get(k, {}).get("bad", 1.0) + 1e-6)
-        if r > best_r:
-            best_r, best_k = r, k
-    return best_k
+def load_user_baseline(username):
+    row = database.get_baseline(username)
+    return row["metrics"] if row and row.get("metrics") else None
+
+def set_active_user(username):
+    """Load only this user's baseline into the live detector."""
+    global baseline, THRESH
+    baseline = load_user_baseline(username)
+    THRESH = build_thresholds(baseline)
+    with lock:
+        STATE["thresh"] = THRESH
+        STATE["baseline_used"] = baseline is not None
+    print(f"Active user: {username} | user baseline: {'loaded' if baseline else 'not found'}")
 
 # ── Metrics ───────────────────────────────────────────────
 def compute_metrics(lms):
@@ -139,6 +135,22 @@ def compute_metrics(lms):
     tl  = float(np.degrees(np.arctan2(abs(vt[0]), abs(vt[1]) + 1e-6)))
     return {"head_forward": hf, "shoulder_asym": sa, "spinal_offset": so,
             "neck_angle_deg": na, "torso_lean_deg": tl}
+
+# ── Posture tips (were missing -> NameError killed the camera thread on the first bad-posture alert) ──
+TIPS = {
+    "head_forward":   "Tuck chin back — ears over shoulders",
+    "shoulder_asym":  "Level your shoulders — roll them back",
+    "spinal_offset":  "Centre your spine — sit over sit bones",
+    "neck_angle_deg": "Raise your gaze — lift screen to eye level",
+    "torso_lean_deg": "Straighten back — press lumbar into chair",
+}
+def worst_metric(m):
+    best_k, best_r = "neck_angle_deg", 0.0
+    for k, v in (m or {}).items():
+        r = abs(v) / (THRESH.get(k, {}).get("bad", 1.0) + 1e-6)
+        if r > best_r:
+            best_r, best_k = r, k
+    return best_k
 
 CLS = {
     0: {"name": "GOOD POSTURE",     "color": (50, 220, 130), "short": "good"},
@@ -159,12 +171,17 @@ STATE       = {
     "flow_mean": 0.0, "bad_rate_pct": 0.0,
     "alerts": [], "baseline_used": baseline is not None,
     "summary": None, "camera_error": None, "calibrating": False,
+    "monitoring": False,
 }
 LATEST_JPEG      = None
 stop_event       = threading.Event()
 SNOOZE_UNTIL     = [0.0]          # shared: UI snooze button writes here
 detection_thread = None           # tracks the current camera/detection thread
 calibration_mode = False          # True only while the user is recording a baseline
+active_username = None            # current logged-in user used by the camera thread
+monitoring_active = False         # True ONLY between "Start session" and "End session".
+                                  # While False the camera may show a plain preview (calibration)
+                                  # but NO detection, alerts, beeps or logging happen.
 
 def stop_calibration_mode():
     global calibration_mode
@@ -197,20 +214,23 @@ def stop_camera():
         LATEST_JPEG = None
 
 def ensure_camera_running():
-    """(Re)starts the camera/detection loop if it isn't already running.
-    This is what lets the camera turn back on after 'End session' was
-    pressed — otherwise it only ever ran once, at server startup."""
+    """(Re)starts the camera/detection loop if it isn't already running."""
     global detection_thread
-    if detection_thread is None or not detection_thread.is_alive():
-        stop_event.clear()
-        detection_thread = threading.Thread(target=detection_loop, daemon=True)
-        detection_thread.start()
+    if detection_thread is not None and detection_thread.is_alive():
+        if not stop_event.is_set():
+            return                          # already running
+        detection_thread.join(timeout=3.0)  # previous run still shutting down
+        if detection_thread.is_alive():
+            return
+    stop_event.clear()
+    detection_thread = threading.Thread(target=detection_loop, daemon=True)
+    detection_thread.start()
 
 # ── Session log ───────────────────────────────────────────
-SESSION_DIR  = "sessions"
+SESSION_DIR = "sessions"
 os.makedirs(SESSION_DIR, exist_ok=True)
-posture_session_file = None   # set fresh each time detection_loop starts
-posture_session      = None   # set fresh each time detection_loop starts
+posture_session_file = None
+posture_session = None
 
 def log_frame(t, cls, conf, mets, flow_mean):
     posture_session["frames"].append({
@@ -222,6 +242,7 @@ def log_frame(t, cls, conf, mets, flow_mean):
     })
 
 def finalise():
+    global posture_session_file
     posture_session["end_time"] = datetime.now().isoformat()
     frames = posture_session["frames"]
     if frames:
@@ -231,15 +252,27 @@ def finalise():
             counts[f["cls_name"]] = counts.get(f["cls_name"], 0) + 1
         dur = frames[-1]["t"] - frames[0]["t"] if n > 1 else 0
         posture_session["summary"] = {
-            "duration_s":   round(dur, 1), "total_frames": n,
-            "good_pct":     round(100 * counts["good"]     / n, 1),
+            "duration_s": round(dur, 1), "total_frames": n,
+            "good_pct": round(100 * counts["good"] / n, 1),
             "moderate_pct": round(100 * counts["moderate"] / n, 1),
-            "bad_pct":      round(100 * counts["bad"]      / n, 1),
+            "bad_pct": round(100 * counts["bad"] / n, 1),
             "total_alerts": len(posture_session["alerts"]),
         }
+
+    # Preview/calibration-only runs have no frames -> nothing to save.
+    if not frames:
+        return posture_session["summary"]
+
+    # SQLite is now the source of truth for dashboard history.
+    if active_username:
+        database.save_session(active_username, posture_session)
+        print(f"\nSession saved to database  →  user={active_username}, session={posture_session['session_id']}")
+
+    # Keep the JSON file as a local backup/debug record. The dashboard does NOT
+    # read these files, so old shared JSON sessions cannot leak into a user.
     with open(posture_session_file, "w") as f:
         json.dump(posture_session, f, indent=2)
-    print(f"\nSession saved  →  {posture_session_file}")
+    print(f"Local session backup → {posture_session_file}")
     return posture_session["summary"]
 
 # ── Detection thread (realtime_posture.py main loop) ──────
@@ -252,10 +285,14 @@ def detection_loop():
     global LATEST_JPEG, posture_session, posture_session_file, calibration_mode
 
     # fresh session-log file every time the camera (re)starts
-    sid          = datetime.now().strftime("%Y%m%d_%H%M%S")
+    username_for_session = active_username
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    unique_part = uuid.uuid4().hex[:8]
+    sid = f"{timestamp}_{unique_part}"
     posture_session_file = os.path.join(SESSION_DIR, f"session_{sid}.json")
     posture_session      = {
-        "session_id": sid, "start_time": datetime.now().isoformat(),
+        "session_id": sid, "username": username_for_session,
+        "start_time": datetime.now().isoformat(),
         "baseline_used": baseline is not None,
         "frames": [], "alerts": [], "summary": {},
     }
@@ -294,183 +331,192 @@ def detection_loop():
         if not ret:
             print("CAMERA: cap.read() failed mid-loop - camera disconnected or grabbed by another app.")
             break
-        now, t = time.time(), time.time() - t0
-        h, w = frame.shape[:2]
-        rgb  = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        res  = pose.process(rgb)
-        detected = res.pose_landmarks is not None
+        try:
+            now, t = time.time(), time.time() - t0
+            h, w = frame.shape[:2]
+            rgb  = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            res  = pose.process(rgb)
+            detected = res.pose_landmarks is not None
 
-        # Calibration uses the same MediaPipe measurements, but it MUST NOT
-        # run the LSTM classifier or draw Good/Moderate/Bad overlays.
-        # The user is simply sitting naturally while we learn their baseline.
-        with lock:
-            is_calibrating = calibration_mode
+            # Calibration uses the same MediaPipe measurements, but it MUST NOT
+            # run the LSTM classifier or draw Good/Moderate/Bad overlays.
+            # The user is simply sitting naturally while we learn their baseline.
+            with lock:
+                # "passive" = calibrating OR no session started: measure only,
+                # never classify / alert / beep / log.
+                is_calibrating = calibration_mode or not monitoring_active
 
-        if detected:
-            kp = [v for lm in res.pose_landmarks.landmark for v in (lm.x, lm.y, lm.z)]
-            frame_buffer.append(kp)
-            metrics = compute_metrics(res.pose_landmarks.landmark)
+            if detected:
+                kp = [v for lm in res.pose_landmarks.landmark for v in (lm.x, lm.y, lm.z)]
+                frame_buffer.append(kp)
+                metrics = compute_metrics(res.pose_landmarks.landmark)
+
+                if is_calibrating:
+                    current_cls = -1
+                    confidence = 0.0
+                    label_text = "CALIBRATING"
+                    label_color = (200, 200, 200)
+                    bad_start = moderate_start = None
+                else:
+                    mp_draw.draw_landmarks(
+                        frame, res.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                        mp_draw.DrawingSpec(color=(0, 240, 160), thickness=2, circle_radius=3),
+                        mp_draw.DrawingSpec(color=(0, 180, 120), thickness=2),
+                    )
+                    if len(frame_buffer) == SEQ_LEN:
+                        tensor = torch.from_numpy(
+                            np.array(frame_buffer, dtype=np.float32)).unsqueeze(0)
+                        with torch.no_grad():
+                            probs = torch.softmax(model(tensor), dim=1).squeeze().tolist()
+                        current_cls = int(np.argmax(probs))
+                        confidence  = probs[current_cls]
+                        label_text  = CLS[current_cls]["name"]
+                        label_color = CLS[current_cls]["color"]
+                        if current_cls == 2:
+                            bad_start, moderate_start = bad_start or now, None
+                        elif current_cls == 1:
+                            moderate_start, bad_start = moderate_start or now, None
+                        else:
+                            bad_start = moderate_start = None
+                        log_frame(t, current_cls, confidence, metrics,
+                                  predictor.get_debug_info()["flow_mean"])
+            else:
+                label_text, label_color = ("CALIBRATING — no person detected", (180, 180, 180)) if is_calibrating else ("No person detected", (100, 100, 100))
+                frame_buffer.clear()
+                bad_start = moderate_start = None
 
             if is_calibrating:
-                current_cls = -1
-                confidence = 0.0
-                label_text = "CALIBRATING"
-                label_color = (200, 200, 200)
-                bad_start = moderate_start = None
+                # No optical-flow warning, no beep, no posture alerts during baseline capture.
+                of_warning, fatigue_msg = None, None
+                flow_info = predictor.get_debug_info()
+                snoozed = False
+                bad_dur = mod_dur = 0.0
+                bad_alert = mod_alert = False
             else:
-                mp_draw.draw_landmarks(
-                    frame, res.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-                    mp_draw.DrawingSpec(color=(0, 240, 160), thickness=2, circle_radius=3),
-                    mp_draw.DrawingSpec(color=(0, 180, 120), thickness=2),
-                )
-                if len(frame_buffer) == SEQ_LEN:
-                    tensor = torch.from_numpy(
-                        np.array(frame_buffer, dtype=np.float32)).unsqueeze(0)
-                    with torch.no_grad():
-                        probs = torch.softmax(model(tensor), dim=1).squeeze().tolist()
-                    current_cls = int(np.argmax(probs))
-                    confidence  = probs[current_cls]
-                    label_text  = CLS[current_cls]["name"]
-                    label_color = CLS[current_cls]["color"]
-                    if current_cls == 2:
-                        bad_start, moderate_start = bad_start or now, None
-                    elif current_cls == 1:
-                        moderate_start, bad_start = moderate_start or now, None
-                    else:
-                        bad_start = moderate_start = None
-                    log_frame(t, current_cls, confidence, metrics,
-                              predictor.get_debug_info()["flow_mean"])
-        else:
-            label_text, label_color = ("CALIBRATING — no person detected", (180, 180, 180)) if is_calibrating else ("No person detected", (100, 100, 100))
-            frame_buffer.clear()
-            bad_start = moderate_start = None
-            if not is_calibrating:
+                try:
+                    of_warning, fatigue_msg = predictor.update(frame, current_cls)
+                except Exception:
+                    of_warning, fatigue_msg = None, None
+                flow_info = predictor.get_debug_info()
+
+                snoozed   = now < SNOOZE_UNTIL[0]
+                bad_dur   = (now - bad_start)      if bad_start      else 0.0
+                mod_dur   = (now - moderate_start) if moderate_start else 0.0
+                bad_alert = bad_dur >= BAD_THRESHOLD and not snoozed
+                mod_alert = mod_dur >= MODERATE_THRESHOLD and not snoozed
+
+                if bad_alert and (now - last_beep) > BEEP_COOLDOWN:
+                    threading.Thread(target=play_alert, daemon=True).start()
+                    last_beep = now
+                    tip = TIPS.get(worst_metric(metrics), "")
+                    posture_session["alerts"].append({
+                        "t": round(t, 2), "type": "bad",
+                        "bad_duration": round(bad_dur, 1), "tip": tip,
+                    })
+
+            # Mirror the video ONCE here (selfie view). Everything drawn after this
+            # line (labels, timer, banners) stays readable, so the browser must NOT
+            # mirror the image again with CSS.
+            frame = cv2.flip(frame, 1)
+
+            if not detected and not is_calibrating:
                 cv2.putText(frame, "Return to camera view",
                             (w // 2 - 170, h // 2),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, (80, 80, 255), 2)
 
-        if is_calibrating:
-            # No optical-flow warning, no beep, no posture alerts during baseline capture.
-            of_warning, fatigue_msg = None, None
-            flow_info = predictor.get_debug_info()
-            snoozed = False
-            bad_dur = mod_dur = 0.0
-            bad_alert = mod_alert = False
-        else:
-            try:
-                of_warning, fatigue_msg = predictor.update(frame, current_cls)
-            except Exception:
-                of_warning, fatigue_msg = None, None
-            flow_info = predictor.get_debug_info()
+            if not is_calibrating:
+                cv2.rectangle(frame, (0, 0), (w, 118), (15, 15, 20), -1)
+                cv2.putText(frame, label_text, (14, 50),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.15, label_color, 2, cv2.LINE_AA)
+                if current_cls >= 0 and len(frame_buffer) == SEQ_LEN:
+                    bmax = w - 28
+                    cv2.rectangle(frame, (14, 62), (14 + bmax, 71), (45, 45, 45), -1)
+                    cv2.rectangle(frame, (14, 62),
+                                  (14 + int(confidence * bmax), 71), label_color, -1)
+                    cv2.putText(frame, f"Conf {confidence*100:.0f}%",
+                                (14, 96), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
+                                (190, 190, 190), 1)
+                else:
+                    cv2.putText(frame, f"Buffer {len(frame_buffer)}/{SEQ_LEN}",
+                                (14, 96), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
+                                (180, 180, 60), 1)
+                mm, ss = divmod(int(t), 60)
+                snooze_txt = "  SNOOZED" if snoozed else ""
+                cv2.putText(frame, f"{mm:02d}:{ss:02d}{snooze_txt}",
+                            (w - 185, 38), cv2.FONT_HERSHEY_SIMPLEX, 0.70,
+                            (200, 130, 30) if snoozed else (155, 155, 155), 1)
+                if bad_start:
+                    cv2.putText(frame, f"Bad {bad_dur:.0f}s/{BAD_THRESHOLD}s",
+                                (w - 175, 68), cv2.FONT_HERSHEY_SIMPLEX, 0.52,
+                                (60, 60, 230), 1, cv2.LINE_AA)
 
-            snoozed   = now < SNOOZE_UNTIL[0]
-            bad_dur   = (now - bad_start)      if bad_start      else 0.0
-            mod_dur   = (now - moderate_start) if moderate_start else 0.0
-            bad_alert = bad_dur >= BAD_THRESHOLD and not snoozed
-            mod_alert = mod_dur >= MODERATE_THRESHOLD and not snoozed
+                banner_bottom = 120
+                if bad_alert:
+                    tip = TIPS.get(worst_metric(metrics), "Fix your posture")
+                    cv2.rectangle(frame, (0, 120), (w, 188), (40, 0, 160), -1)
+                    cv2.putText(frame, "!  FIX YOUR POSTURE  !",
+                                (w // 2 - 180, 148),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.95, (255, 255, 255), 2)
+                    cv2.putText(frame, tip,
+                                (w // 2 - min(len(tip) * 4, 280), 174),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.52, (220, 200, 255), 1)
+                    banner_bottom = 188
+                elif mod_alert:
+                    cv2.rectangle(frame, (0, 120), (w, 175), (20, 90, 140), -1)
+                    cv2.putText(frame, "Posture drifting — sit straight",
+                                (w // 2 - 190, 154),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.82, (255, 230, 180), 1)
+                    banner_bottom = 175
+                if of_warning and not snoozed:
+                    cv2.rectangle(frame, (0, banner_bottom),
+                                  (w, banner_bottom + 44), (20, 70, 90), -1)
+                    cv2.putText(frame, f"  PREDICT: {of_warning}",
+                                (10, banner_bottom + 28),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.58, (150, 230, 255), 1)
+                if fatigue_msg:
+                    cv2.putText(frame, fatigue_msg, (10, h - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.50, (160, 160, 100), 1)
+                if metrics and detected:
+                    py = h - 145
+                    cv2.rectangle(frame, (0, py - 8), (250, h), (14, 14, 20), -1)
+                    cv2.putText(frame, "METRICS", (12, py + 2),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.42, (80, 90, 100), 1)
+                    rows = [("Head fwd", "head_forward", ""), ("Shoulder", "shoulder_asym", ""),
+                            ("Spinal", "spinal_offset", ""), ("Neck", "neck_angle_deg", "°"),
+                            ("Torso", "torso_lean_deg", "°")]
+                    for i, (lbl, key, unit) in enumerate(rows):
+                        val = metrics[key]
+                        c = ((50, 220, 130) if abs(val) < THRESH[key]["moderate"]
+                             else (30, 165, 255) if abs(val) < THRESH[key]["bad"]
+                             else (60, 60, 230))
+                        cv2.putText(frame, f"{lbl:<10} {val:+.3f}{unit}",
+                                    (12, py + 22 + i * 22),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.44, c, 1, cv2.LINE_AA)
 
-            if bad_alert and (now - last_beep) > BEEP_COOLDOWN:
-                play_alert()
-                last_beep = now
-                tip = TIPS.get(worst_metric(metrics), "")
-                posture_session["alerts"].append({
-                    "t": round(t, 2), "type": "bad",
-                    "bad_duration": round(bad_dur, 1), "tip": tip,
-                })
+            ok, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            if ok:
+                with lock:
+                    LATEST_JPEG = jpeg.tobytes()
+                    STATE.update({
+                        "detected": detected, "buffer": len(frame_buffer),
+                        "cls": -1 if is_calibrating else current_cls,
+                        "cls_name": "CALIBRATING" if is_calibrating else label_text,
+                        "conf": round(float(confidence), 3), "metrics": metrics,
+                        "bad_dur": round(bad_dur, 1), "mod_dur": round(mod_dur, 1),
+                        "t": round(t, 1), "bad_alert": bad_alert,
+                        "mod_alert": mod_alert, "of_warning": of_warning,
+                        "fatigue": fatigue_msg, "snoozed": snoozed,
+                        "snooze_left_s": max(0, int(SNOOZE_UNTIL[0] - now)),
+                        "flow_mean": round(flow_info["flow_mean"], 5),
+                        "bad_rate_pct": round(flow_info["bad_rate_pct"], 1),
+                        "alerts": [] if is_calibrating else posture_session["alerts"][-12:],
+                        "calibrating": is_calibrating,
+                    })
 
-        if not is_calibrating:
-            cv2.rectangle(frame, (0, 0), (w, 118), (15, 15, 20), -1)
-            cv2.putText(frame, label_text, (14, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.15, label_color, 2, cv2.LINE_AA)
-            if current_cls >= 0 and len(frame_buffer) == SEQ_LEN:
-                bmax = w - 28
-                cv2.rectangle(frame, (14, 62), (14 + bmax, 71), (45, 45, 45), -1)
-                cv2.rectangle(frame, (14, 62),
-                              (14 + int(confidence * bmax), 71), label_color, -1)
-                cv2.putText(frame, f"Conf {confidence*100:.0f}%",
-                            (14, 96), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
-                            (190, 190, 190), 1)
-            else:
-                cv2.putText(frame, f"Buffer {len(frame_buffer)}/{SEQ_LEN}",
-                            (14, 96), cv2.FONT_HERSHEY_SIMPLEX, 0.55,
-                            (180, 180, 60), 1)
-            mm, ss = divmod(int(t), 60)
-            snooze_txt = "  SNOOZED" if snoozed else ""
-            cv2.putText(frame, f"{mm:02d}:{ss:02d}{snooze_txt}",
-                        (w - 185, 38), cv2.FONT_HERSHEY_SIMPLEX, 0.70,
-                        (200, 130, 30) if snoozed else (155, 155, 155), 1)
-            if bad_start:
-                cv2.putText(frame, f"Bad {bad_dur:.0f}s/{BAD_THRESHOLD}s",
-                            (w - 175, 68), cv2.FONT_HERSHEY_SIMPLEX, 0.52,
-                            (60, 60, 230), 1, cv2.LINE_AA)
-
-            banner_bottom = 120
-            if bad_alert:
-                tip = TIPS.get(worst_metric(metrics), "Fix your posture")
-                cv2.rectangle(frame, (0, 120), (w, 188), (40, 0, 160), -1)
-                cv2.putText(frame, "!  FIX YOUR POSTURE  !",
-                            (w // 2 - 180, 148),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.95, (255, 255, 255), 2)
-                cv2.putText(frame, tip,
-                            (w // 2 - min(len(tip) * 4, 280), 174),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.52, (220, 200, 255), 1)
-                banner_bottom = 188
-            elif mod_alert:
-                cv2.rectangle(frame, (0, 120), (w, 175), (20, 90, 140), -1)
-                cv2.putText(frame, "Posture drifting — sit straight",
-                            (w // 2 - 190, 154),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.82, (255, 230, 180), 1)
-                banner_bottom = 175
-            if of_warning and not snoozed:
-                cv2.rectangle(frame, (0, banner_bottom),
-                              (w, banner_bottom + 44), (20, 70, 90), -1)
-                cv2.putText(frame, f"  PREDICT: {of_warning}",
-                            (10, banner_bottom + 28),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.58, (150, 230, 255), 1)
-            if fatigue_msg:
-                cv2.putText(frame, fatigue_msg, (10, h - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.50, (160, 160, 100), 1)
-            if metrics and detected:
-                py = h - 145
-                cv2.rectangle(frame, (0, py - 8), (250, h), (14, 14, 20), -1)
-                cv2.putText(frame, "METRICS", (12, py + 2),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.42, (80, 90, 100), 1)
-                rows = [("Head fwd", "head_forward", ""), ("Shoulder", "shoulder_asym", ""),
-                        ("Spinal", "spinal_offset", ""), ("Neck", "neck_angle_deg", "°"),
-                        ("Torso", "torso_lean_deg", "°")]
-                for i, (lbl, key, unit) in enumerate(rows):
-                    val = metrics[key]
-                    c = ((50, 220, 130) if abs(val) < THRESH[key]["moderate"]
-                         else (30, 165, 255) if abs(val) < THRESH[key]["bad"]
-                         else (60, 60, 230))
-                    cv2.putText(frame, f"{lbl:<10} {val:+.3f}{unit}",
-                                (12, py + 22 + i * 22),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.44, c, 1, cv2.LINE_AA)
-            cv2.putText(frame,
-                        f"flow {flow_info['flow_mean']:.4f}  "
-                        f"bad {flow_info['bad_rate_pct']:.0f}%",
-                        (w - 240, h - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.38, (55, 65, 75), 1)
-
-        ok, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-        if ok:
-            with lock:
-                LATEST_JPEG = jpeg.tobytes()
-                STATE.update({
-                    "detected": detected, "buffer": len(frame_buffer),
-                    "cls": -1 if is_calibrating else current_cls,
-                    "cls_name": "CALIBRATING" if is_calibrating else label_text,
-                    "conf": round(float(confidence), 3), "metrics": metrics,
-                    "bad_dur": round(bad_dur, 1), "mod_dur": round(mod_dur, 1),
-                    "t": round(t, 1), "bad_alert": bad_alert,
-                    "mod_alert": mod_alert, "of_warning": of_warning,
-                    "fatigue": fatigue_msg, "snoozed": snoozed,
-                    "snooze_left_s": max(0, int(SNOOZE_UNTIL[0] - now)),
-                    "flow_mean": round(flow_info["flow_mean"], 5),
-                    "bad_rate_pct": round(flow_info["bad_rate_pct"], 1),
-                    "alerts": [] if is_calibrating else posture_session["alerts"][-12:],
-                    "calibrating": is_calibrating,
-                })
+        except Exception:
+            import traceback; traceback.print_exc()
+            time.sleep(0.05)   # keep the camera alive; skip just this frame
+            continue
 
     cap.release()
     with lock:
@@ -500,7 +546,10 @@ def login_page():
 @login_required
 def dashboard_page():
     stop_calibration_mode()
-    ensure_camera_running()
+    # Opening the dashboard must never start detection. If no session is
+    # running, make sure the camera is fully off (e.g. after calibration).
+    if not monitoring_active:
+        stop_camera()
     return render_template("postureguard-dashboard-warm.html")
 
 @app.route("/calibrate")
@@ -513,16 +562,29 @@ def calibrate_page():
 @app.route("/monitor")
 @login_required
 def monitor_page():
+    # Monitor is only reachable after "Start session" (/api/start).
+    if not monitoring_active:
+        return redirect(url_for("dashboard_page"))
     stop_calibration_mode()
     ensure_camera_running()
     return render_template("postureguard-monitor-warm.html")
 
 @app.route("/logout")
 def logout():
+    global active_username, baseline, THRESH, monitoring_active
     # Completely stop monitoring before showing the login page.
+    monitoring_active = False
+    with lock:
+        STATE["monitoring"] = False
     stop_calibration_mode()
     stop_camera()
     session.clear()
+    active_username = None
+    baseline = None
+    THRESH = build_thresholds(None)
+    with lock:
+        STATE["thresh"] = THRESH
+        STATE["baseline_used"] = False
     return redirect(url_for("login_page"))
 
 # ---- Auth API (one endpoint does both login AND signup) ----
@@ -538,16 +600,30 @@ def api_login():
 
     user = database.get_user_by_username(username)
 
+    global active_username, monitoring_active
+
     if user is None:
         # first time we've seen this username → create the account right now
         database.create_user(username, hash_pw(password))
         session["user"] = username
+        active_username = username
+        set_active_user(username)
         return jsonify({"ok": True, "redirect": url_for("calibrate_page")})
 
     if user["password_hash"] != hash_pw(password):
         return jsonify({"ok": False, "error": "Wrong password"}), 401
 
+    # If another account was active in this browser, stop its camera before
+    # switching the active user.
+    if active_username and active_username != username:
+        monitoring_active = False
+        with lock:
+            STATE["monitoring"] = False
+        stop_camera()
+
     session["user"] = username
+    active_username = username
+    set_active_user(username)
     next_page = "calibrate_page" if not user["baseline_done"] else "dashboard_page"
     return jsonify({"ok": True, "redirect": url_for(next_page)})
 
@@ -588,53 +664,60 @@ def api_save_baseline():
     if not metrics:
         return jsonify({"ok": False, "error": "No calibration metrics received"}), 400
 
-    database.save_baseline(session["user"], metrics, data.get("frames_used"), data.get("stability_score"))
-    database.mark_baseline_done(session["user"])
-
-    with open(BASELINE_FILE, "w") as f:
-        json.dump({"metrics": metrics}, f, indent=2)
+    username = session["user"]
+    database.save_baseline(username, metrics, data.get("frames_used"), data.get("stability_score"))
+    database.mark_baseline_done(username)
+    set_active_user(username)
 
     return jsonify({"ok": True, "redirect": url_for("dashboard_page")})
 
 @app.route("/api/skip_baseline", methods=["POST"])
 @login_required
 def api_skip_baseline():
-    database.mark_baseline_done(session["user"])
+    username = session["user"]
+    database.mark_baseline_done(username)
+    set_active_user(username)
     return jsonify({"ok": True, "redirect": url_for("dashboard_page")})
 
 # ---- Session history API (feeds the dashboard) ----
 @app.route("/api/history")
 @login_required
 def api_history():
-    files = sorted(glob.glob(os.path.join(SESSION_DIR, "session_*.json")))
+    # IMPORTANT: read only this logged-in user's sessions from SQLite.
+    stored_sessions = database.get_sessions(session["user"])
     sessions_out = []
-    for i, fp in enumerate(files):
-        try:
-            with open(fp) as f:
-                s = json.load(f)
-        except Exception:
-            continue
+
+    for i, s in enumerate(stored_sessions):
         summ = s.get("summary") or {}
         frames = s.get("frames", [])
         t_min, head_forward, torso_lean, alerts = [], [], [], []
+
         for fr in frames:
             t_min.append(round(fr.get("t", 0) / 60, 3))
             head_forward.append(fr.get("head_forward", 0))
             torso_lean.append(fr.get("torso_lean_deg", 0))
+
         for a in s.get("alerts", []):
             alerts.append(round(a.get("t", 0) / 60, 3))
-        good, mod, bad = (summ.get("good_pct", 0), summ.get("moderate_pct", 0),
-                           summ.get("bad_pct", 0))
+
+        good = float(summ.get("good_pct", s.get("good_pct", 0)) or 0)
+        mod = float(summ.get("moderate_pct", s.get("moderate_pct", 0)) or 0)
+        bad = float(summ.get("bad_pct", s.get("bad_pct", 0)) or 0)
+        duration_s = float(summ.get("duration_s", s.get("duration_s", 0)) or 0)
         score = round(max(0, good + mod * 0.5))
+
         sessions_out.append({
-            "id": i,
+            "id": s.get("id", i),
+            "session_id": s.get("session_id"),
             "date": s.get("start_time", "")[:10],
-            "duration_min": round(summ.get("duration_s", 0) / 60, 1),
+            "duration_min": round(duration_s / 60, 1),
             "good_pct": good, "moderate_pct": mod, "bad_pct": bad,
             "score": score,
             "baseline_drift_deg": 0,
-            "timeline": {"t_min": t_min, "head_forward": head_forward,
-                         "torso_lean": torso_lean, "alerts": alerts},
+            "timeline": {
+                "t_min": t_min, "head_forward": head_forward,
+                "torso_lean": torso_lean, "alerts": alerts
+            },
         })
 
     return jsonify({
@@ -670,21 +753,55 @@ def api_snooze():
     SNOOZE_UNTIL[0] = time.time() + 300   # replaces the 'S' key
     return jsonify({"ok": True})
 
+@app.route("/api/start", methods=["POST"])
+@login_required
+def api_start():
+    """'Start session' — the ONLY place live detection is switched on."""
+    global monitoring_active, active_username
+    stop_calibration_mode()
+
+    if active_username != session["user"]:
+        active_username = session["user"]
+        set_active_user(active_username)
+
+    if not monitoring_active:
+        stop_camera()                    # drop any passive preview camera -> clean session
+        with lock:
+            STATE.update({
+                "summary": None, "camera_error": None,
+                "bad_alert": False, "mod_alert": False, "alerts": [],
+                "cls": -1, "cls_name": "Warming up…", "conf": 0.0,
+                "t": 0.0, "monitoring": True,
+            })
+        monitoring_active = True
+    ensure_camera_running()              # no-op if the session is already running
+    return jsonify({"ok": True, "redirect": url_for("monitor_page")})
+
 @app.route("/api/stop", methods=["POST"])
 @login_required
 def api_stop():
+    """'End session' — stops detection and releases the camera."""
+    global monitoring_active
     stop_event.set()
+    thread = detection_thread
+    result = None
     deadline = time.time() + 5
     while time.time() < deadline:
         with lock:
             if STATE.get("summary") is not None:
-                return jsonify({"ok": True, "summary": STATE["summary"],
-                                "session_file": posture_session_file})
+                result = {"ok": True, "summary": STATE["summary"],
+                          "session_file": posture_session_file}
+                break
+        if thread is None or not thread.is_alive():
+            break                        # e.g. camera never opened - don't wait 5s
         time.sleep(0.1)
-    return jsonify({"ok": True, "summary": None})
+    monitoring_active = False
+    with lock:
+        STATE["monitoring"] = False
+    return jsonify(result or {"ok": True, "summary": None})
 
 if __name__ == "__main__":
-    # IMPORTANT: do not start the webcam on the login page.
-    # The camera starts only after the user opens Dashboard/Calibrate/Monitor.
+    # IMPORTANT: detection never starts on page load. It starts only when the
+    # user presses "Start session" (POST /api/start) and stops on "End session".
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, threaded=True)
