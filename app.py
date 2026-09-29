@@ -171,17 +171,24 @@ STATE       = {
     "flow_mean": 0.0, "bad_rate_pct": 0.0,
     "alerts": [], "baseline_used": baseline is not None,
     "summary": None, "camera_error": None, "calibrating": False,
-    "monitoring": False,
+    # wellness coach
+    "good_dur": 0.0, "sit_dur": 0.0, "wellness_due": False,
+    "wellness_after_s": 1800, "breaks_taken": 0, "focus_metric": None,
 }
 LATEST_JPEG      = None
 stop_event       = threading.Event()
 SNOOZE_UNTIL     = [0.0]          # shared: UI snooze button writes here
+# ── Wellness coach settings ───────────────────────────────
+# After this many seconds of continuous GOOD posture the robot suggests a
+# movement break (research: break up sitting at least every ~30 min).
+# For quick testing run:  set WELLNESS_GOOD_SECS=60   (Windows)  before  python app.py
+WELLNESS_GOOD_SECS   = int(os.environ.get("WELLNESS_GOOD_SECS", 30 * 60))
+GOOD_STREAK_GRACE_S  = 45     # a short slouch (<45 s) does not reset the good-posture streak
+AWAY_RESET_S         = 60     # leaving the frame for 60 s counts as a break (streak resets)
+WELLNESS_CTRL    = {}             # commands from /api/wellness/ack -> read by detection loop
 detection_thread = None           # tracks the current camera/detection thread
 calibration_mode = False          # True only while the user is recording a baseline
 active_username = None            # current logged-in user used by the camera thread
-monitoring_active = False         # True ONLY between "Start session" and "End session".
-                                  # While False the camera may show a plain preview (calibration)
-                                  # but NO detection, alerts, beeps or logging happen.
 
 def stop_calibration_mode():
     global calibration_mode
@@ -214,17 +221,14 @@ def stop_camera():
         LATEST_JPEG = None
 
 def ensure_camera_running():
-    """(Re)starts the camera/detection loop if it isn't already running."""
+    """(Re)starts the camera/detection loop if it isn't already running.
+    This is what lets the camera turn back on after 'End session' was
+    pressed — otherwise it only ever ran once, at server startup."""
     global detection_thread
-    if detection_thread is not None and detection_thread.is_alive():
-        if not stop_event.is_set():
-            return                          # already running
-        detection_thread.join(timeout=3.0)  # previous run still shutting down
-        if detection_thread.is_alive():
-            return
-    stop_event.clear()
-    detection_thread = threading.Thread(target=detection_loop, daemon=True)
-    detection_thread.start()
+    if detection_thread is None or not detection_thread.is_alive():
+        stop_event.clear()
+        detection_thread = threading.Thread(target=detection_loop, daemon=True)
+        detection_thread.start()
 
 # ── Session log ───────────────────────────────────────────
 SESSION_DIR = "sessions"
@@ -259,9 +263,9 @@ def finalise():
             "total_alerts": len(posture_session["alerts"]),
         }
 
-    # Preview/calibration-only runs have no frames -> nothing to save.
-    if not frames:
-        return posture_session["summary"]
+    posture_session.setdefault("summary", {})
+    if posture_session["summary"] is not None:
+        posture_session["summary"]["breaks_taken"] = len(posture_session.get("breaks", []))
 
     # SQLite is now the source of truth for dashboard history.
     if active_username:
@@ -294,7 +298,7 @@ def detection_loop():
         "session_id": sid, "username": username_for_session,
         "start_time": datetime.now().isoformat(),
         "baseline_used": baseline is not None,
-        "frames": [], "alerts": [], "summary": {},
+        "frames": [], "alerts": [], "breaks": [], "summary": {},
     }
 
     mp_pose = mp.solutions.pose
@@ -321,6 +325,13 @@ def detection_loop():
     t0 = time.time()
     frame_buffer.clear()
 
+    # wellness-coach trackers (local to this session)
+    good_start = nongood_start = sit_start = away_start = None
+    wellness_next_at = 0.0
+    worst_counts = {}
+    good_dur = sit_dur = 0.0
+    wellness_due = False
+
     with lock:
         STATE["running"] = True
         STATE["camera_error"] = None
@@ -342,9 +353,7 @@ def detection_loop():
             # run the LSTM classifier or draw Good/Moderate/Bad overlays.
             # The user is simply sitting naturally while we learn their baseline.
             with lock:
-                # "passive" = calibrating OR no session started: measure only,
-                # never classify / alert / beep / log.
-                is_calibrating = calibration_mode or not monitoring_active
+                is_calibrating = calibration_mode
 
             if detected:
                 kp = [v for lm in res.pose_landmarks.landmark for v in (lm.x, lm.y, lm.z)]
@@ -413,6 +422,48 @@ def detection_loop():
                         "t": round(t, 2), "type": "bad",
                         "bad_duration": round(bad_dur, 1), "tip": tip,
                     })
+
+            # ── Wellness coach: streak tracking + break commands ──────────
+            with lock:
+                _cmd   = WELLNESS_CTRL.pop("cmd", None)
+                _kind  = WELLNESS_CTRL.pop("kind", "stretch")
+                _delay = WELLNESS_CTRL.pop("delay", 0)
+            if _cmd == "done":
+                good_start = nongood_start = sit_start = None
+                posture_session["breaks"].append({"t": round(t, 2), "kind": _kind})
+                wellness_next_at = now
+            elif _cmd == "later":
+                wellness_next_at = now + _delay
+
+            if not is_calibrating:
+                if detected and current_cls >= 0:
+                    away_start = None
+                    if sit_start is None:
+                        sit_start = now
+                    if current_cls == 0:
+                        nongood_start = None
+                        if good_start is None:
+                            good_start = now
+                    else:
+                        if nongood_start is None:
+                            nongood_start = now
+                        if now - nongood_start >= GOOD_STREAK_GRACE_S:
+                            good_start = None
+                        if metrics:
+                            wm = worst_metric(metrics)
+                            worst_counts[wm] = worst_counts.get(wm, 0) + 1
+                elif not detected:
+                    if away_start is None:
+                        away_start = now
+                    if now - away_start >= AWAY_RESET_S:
+                        good_start = nongood_start = sit_start = None
+                good_dur = (now - good_start) if good_start else 0.0
+                sit_dur  = (now - sit_start)  if sit_start  else 0.0
+                wellness_due = good_dur >= WELLNESS_GOOD_SECS and now >= wellness_next_at
+            else:
+                good_dur = sit_dur = 0.0
+                wellness_due = False
+            focus_metric = max(worst_counts, key=worst_counts.get) if worst_counts else None
 
             # Mirror the video ONCE here (selfie view). Everything drawn after this
             # line (labels, timer, banners) stays readable, so the browser must NOT
@@ -511,6 +562,11 @@ def detection_loop():
                         "bad_rate_pct": round(flow_info["bad_rate_pct"], 1),
                         "alerts": [] if is_calibrating else posture_session["alerts"][-12:],
                         "calibrating": is_calibrating,
+                        "good_dur": round(good_dur, 1), "sit_dur": round(sit_dur, 1),
+                        "wellness_due": wellness_due,
+                        "wellness_after_s": WELLNESS_GOOD_SECS,
+                        "breaks_taken": len(posture_session["breaks"]),
+                        "focus_metric": focus_metric,
                     })
 
         except Exception:
@@ -522,6 +578,8 @@ def detection_loop():
     with lock:
         STATE["running"] = False
         STATE["cls_name"] = "Session ended"
+        STATE["wellness_due"] = False
+        STATE["good_dur"] = STATE["sit_dur"] = 0.0
     summary = finalise()
     with lock:
         STATE["summary"] = summary
@@ -545,12 +603,47 @@ def login_page():
 @app.route("/dashboard")
 @login_required
 def dashboard_page():
+    # Dashboard is analytics/home only. Do NOT start the webcam here.
+    # The dashboard's Start Session button calls /api/session/start, which
+    # keeps camera ownership with the live monitor and avoids duplicate
+    # camera threads / "Could not start the session" races.
     stop_calibration_mode()
-    # Opening the dashboard must never start detection. If no session is
-    # running, make sure the camera is fully off (e.g. after calibration).
-    if not monitoring_active:
-        stop_camera()
     return render_template("postureguard-dashboard-warm.html")
+
+# ---- Session-start compatibility API ---------------------------------
+# The monitor page uses /monitor, but the dashboard can start a session
+# without navigating through a redesigned dashboard.  These aliases are
+# intentionally kept so older/newer dashboard HTML versions can all talk
+# to the same backend without breaking the rest of the project.
+@app.route("/api/session/start", methods=["POST"])
+@app.route("/api/start_session", methods=["POST"])
+@app.route("/api/start", methods=["POST"])
+@login_required
+def api_session_start():
+    stop_calibration_mode()
+    ensure_camera_running()
+
+    # Give the camera thread a short window to report either success or
+    # a real webcam error before replying to the browser.
+    deadline = time.time() + 3.0
+    while time.time() < deadline:
+        with lock:
+            running = bool(STATE.get("running"))
+            camera_error = STATE.get("camera_error")
+        if running:
+            return jsonify({"ok": True, "running": True, "redirect": url_for("monitor_page")})
+        if camera_error:
+            return jsonify({"ok": False, "error": camera_error}), 503
+        time.sleep(0.05)
+
+    # The thread may still be warming up. The monitor page will continue
+    # polling /api/state, so do not falsely report a hard failure here.
+    with lock:
+        camera_error = STATE.get("camera_error")
+        running = bool(STATE.get("running"))
+    if camera_error:
+        return jsonify({"ok": False, "error": camera_error}), 503
+    return jsonify({"ok": True, "running": running, "redirect": url_for("monitor_page")})
 
 @app.route("/calibrate")
 @login_required
@@ -562,20 +655,14 @@ def calibrate_page():
 @app.route("/monitor")
 @login_required
 def monitor_page():
-    # Monitor is only reachable after "Start session" (/api/start).
-    if not monitoring_active:
-        return redirect(url_for("dashboard_page"))
     stop_calibration_mode()
     ensure_camera_running()
     return render_template("postureguard-monitor-warm.html")
 
 @app.route("/logout")
 def logout():
-    global active_username, baseline, THRESH, monitoring_active
+    global active_username, baseline, THRESH
     # Completely stop monitoring before showing the login page.
-    monitoring_active = False
-    with lock:
-        STATE["monitoring"] = False
     stop_calibration_mode()
     stop_camera()
     session.clear()
@@ -600,7 +687,7 @@ def api_login():
 
     user = database.get_user_by_username(username)
 
-    global active_username, monitoring_active
+    global active_username
 
     if user is None:
         # first time we've seen this username → create the account right now
@@ -616,9 +703,6 @@ def api_login():
     # If another account was active in this browser, stop its camera before
     # switching the active user.
     if active_username and active_username != username:
-        monitoring_active = False
-        with lock:
-            STATE["monitoring"] = False
         stop_camera()
 
     session["user"] = username
@@ -753,55 +837,39 @@ def api_snooze():
     SNOOZE_UNTIL[0] = time.time() + 300   # replaces the 'S' key
     return jsonify({"ok": True})
 
-@app.route("/api/start", methods=["POST"])
+@app.route("/api/wellness/ack", methods=["POST"])
 @login_required
-def api_start():
-    """'Start session' — the ONLY place live detection is switched on."""
-    global monitoring_active, active_username
-    stop_calibration_mode()
-
-    if active_username != session["user"]:
-        active_username = session["user"]
-        set_active_user(active_username)
-
-    if not monitoring_active:
-        stop_camera()                    # drop any passive preview camera -> clean session
-        with lock:
-            STATE.update({
-                "summary": None, "camera_error": None,
-                "bad_alert": False, "mod_alert": False, "alerts": [],
-                "cls": -1, "cls_name": "Warming up…", "conf": 0.0,
-                "t": 0.0, "monitoring": True,
-            })
-        monitoring_active = True
-    ensure_camera_running()              # no-op if the session is already running
-    return jsonify({"ok": True, "redirect": url_for("monitor_page")})
+def api_wellness_ack():
+    """The robot coach tells the server what the user did with a break reminder.
+       {action:'done', kind:'stretch'|'walk'|'chair'}  -> streak resets, break is logged
+       {action:'later', minutes:5}                      -> remind again later"""
+    data   = request.get_json(silent=True) or {}
+    action = data.get("action", "done")
+    with lock:
+        if action == "later":
+            WELLNESS_CTRL["cmd"]   = "later"
+            WELLNESS_CTRL["delay"] = max(1, min(60, int(data.get("minutes", 5)))) * 60
+        else:
+            WELLNESS_CTRL["cmd"]  = "done"
+            WELLNESS_CTRL["kind"] = str(data.get("kind", "stretch"))[:16]
+    return jsonify({"ok": True})
 
 @app.route("/api/stop", methods=["POST"])
+@app.route("/api/session/stop", methods=["POST"])
 @login_required
 def api_stop():
-    """'End session' — stops detection and releases the camera."""
-    global monitoring_active
     stop_event.set()
-    thread = detection_thread
-    result = None
     deadline = time.time() + 5
     while time.time() < deadline:
         with lock:
             if STATE.get("summary") is not None:
-                result = {"ok": True, "summary": STATE["summary"],
-                          "session_file": posture_session_file}
-                break
-        if thread is None or not thread.is_alive():
-            break                        # e.g. camera never opened - don't wait 5s
+                return jsonify({"ok": True, "summary": STATE["summary"],
+                                "session_file": posture_session_file})
         time.sleep(0.1)
-    monitoring_active = False
-    with lock:
-        STATE["monitoring"] = False
-    return jsonify(result or {"ok": True, "summary": None})
+    return jsonify({"ok": True, "summary": None})
 
 if __name__ == "__main__":
-    # IMPORTANT: detection never starts on page load. It starts only when the
-    # user presses "Start session" (POST /api/start) and stops on "End session".
+    # IMPORTANT: do not start the webcam on the login page.
+    # The camera starts only after the user opens Dashboard/Calibrate/Monitor.
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, threaded=True)

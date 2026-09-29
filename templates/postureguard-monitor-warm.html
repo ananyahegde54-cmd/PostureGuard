@@ -118,6 +118,75 @@
   .summary .splits i{height:100%;}
   .summary .slabels{display:flex;justify-content:space-between;font-size:.7rem;color:#8a6d4d;margin-bottom:1.4rem;}
 
+
+  /* ===== pop-up banner ===== */
+  .popbanner{display:none;align-items:center;gap:.8rem;flex-wrap:wrap;background:var(--paper);border:1.5px dashed var(--apricot);
+    border-radius:16px;padding:.7rem 1rem;margin-bottom:1.1rem;font-size:.82rem;color:var(--deep);box-shadow:0 8px 20px rgba(124,67,34,.08);}
+  .popbanner .grow{flex:1;min-width:220px;}
+  .popbanner .x{background:none;border:none;cursor:pointer;color:#a08a72;font-size:1rem;}
+
+  /* ===== wellness coach card ===== */
+  .coach-top{display:flex;gap:.9rem;align-items:center;margin-bottom:.8rem;}
+  .coach-robot{width:78px;flex:none;}
+  .coach-stats{flex:1;min-width:0;}
+  .crow{display:flex;justify-content:space-between;align-items:baseline;font-size:.76rem;margin-bottom:.3rem;color:#6b5947;}
+  .crow b{font-family:'Space Mono';color:var(--deep);font-size:.74rem;}
+  .crow.small{font-size:.7rem;color:#8a6d4d;margin-top:.35rem;margin-bottom:0;}
+  .cbar{height:9px;border-radius:99px;background:var(--mist);overflow:hidden;}
+  .cbar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--good),#6fb66f);transition:width .6s;}
+  .coach-focus{font-size:.76rem;line-height:1.45;color:#6b5947;background:var(--cream);border:1.5px solid var(--sage);border-radius:12px;padding:.55rem .75rem;margin-bottom:.8rem;}
+  .coach-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.7rem;}
+  .coach-actions .btn{font-size:.62rem;padding:.55rem .8rem;}
+  .coach-toggles{display:flex;gap:.9rem;flex-wrap:wrap;font-size:.72rem;color:#6b5947;margin-bottom:.8rem;}
+  .coach-toggles label{display:flex;align-items:center;gap:.3rem;cursor:pointer;}
+  .fact{font-size:.72rem;line-height:1.5;color:#7d6a58;border-top:1.5px dashed var(--sage);padding-top:.7rem;min-height:3.6em;}
+  .fact .src{display:block;font-family:'Space Mono';font-size:.56rem;letter-spacing:.06em;color:var(--terra);margin-top:.25rem;}
+  .coach-test{margin-top:.6rem;font-size:.68rem;color:#8a6d4d;}
+  .coach-test summary{cursor:pointer;}
+  .coach-test .btn{font-size:.58rem;padding:.45rem .7rem;margin:.4rem .4rem 0 0;}
+
+  /* ===== robot pop-up layer (slides in like the reference video) ===== */
+  .pgl{position:fixed;inset:0;z-index:200;pointer-events:none;}
+  .pgl-wash{position:absolute;inset:0;opacity:0;transition:opacity .5s;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+  .pgl.alert .pgl-wash{background:radial-gradient(120% 90% at 0% 50%,rgba(255,110,110,.40),rgba(255,190,170,.16) 55%,rgba(255,230,220,.06));}
+  .pgl.care .pgl-wash{background:radial-gradient(120% 90% at 0% 50%,rgba(150,205,140,.36),rgba(255,226,180,.18) 55%,rgba(255,240,220,.06));}
+  .pgl.on .pgl-wash{opacity:1;}
+  .pgl-stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:.55rem;width:min(92vw,720px);padding:0;}
+  .pgl-robot{width:clamp(150px,20vw,245px);flex:none;opacity:0;transform:translateY(115%) scale(.72) rotate(-8deg);
+    transition:transform .85s cubic-bezier(.34,1.45,.5,1),opacity .4s;filter:drop-shadow(0 22px 26px rgba(124,67,34,.28));}
+  .pgl.on .pgl-robot{opacity:1;transform:translateY(0) scale(1) rotate(0);}
+  .pgl-bubble{pointer-events:none;max-width:min(450px,72vw);max-height:78vh;overflow:auto;background:var(--paper);
+    border:1.5px solid var(--sage);border-radius:22px;padding:1.05rem 1.25rem;box-shadow:0 22px 50px rgba(124,67,34,.26);
+    opacity:0;transform:scale(.6) translateX(-30px);transform-origin:left center;
+    transition:transform .5s cubic-bezier(.34,1.5,.5,1) .35s,opacity .3s .35s;}
+  .pgl.on .pgl-bubble{opacity:1;transform:none;pointer-events:auto;}
+  .pgl.leaving .pgl-robot{opacity:0;transform:translateY(115%) scale(.72) rotate(-8deg);transition:transform .6s ease-in,opacity .5s;}
+  .pgl.leaving .pgl-bubble{opacity:0;transform:scale(.8);pointer-events:none;transition:all .3s;}
+  .pgl-title{font-family:'Unbounded';font-weight:800;font-size:1rem;color:var(--deep);}
+  .pgl.alert .pgl-title{color:#b8452f;}
+  .pgl-text{font-size:.86rem;line-height:1.5;color:#6b5947;margin-top:.4rem;}
+  .pgl-text:empty{display:none;}
+  .pgl-actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem;}
+  .pgl-actions:empty{display:none;}
+  .pgl-actions .btn{font-size:.62rem;padding:.6rem .9rem;}
+  .rt-intro{font-size:.8rem;color:#6b5947;margin:.5rem 0 .6rem;line-height:1.45;}
+  ol.rt{list-style:none;counter-reset:rt;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem;}
+  ol.rt li{counter-increment:rt;position:relative;padding:.55rem .7rem .55rem 2.3rem;background:var(--cream);border:1.5px solid var(--sage);border-radius:12px;font-size:.8rem;}
+  ol.rt li::before{content:counter(rt);position:absolute;left:.65rem;top:.55rem;width:1.35rem;height:1.35rem;border-radius:50%;background:var(--terra);color:#fff;
+    font-family:'Unbounded';font-size:.62rem;display:flex;align-items:center;justify-content:center;}
+  ol.rt .dose{font-family:'Space Mono';font-size:.64rem;color:var(--terra);margin-left:.3rem;}
+  ol.rt .how{color:#7d6a58;margin-top:.15rem;line-height:1.4;font-size:.76rem;}
+  ol.rt a.vid{display:inline-block;margin-top:.25rem;font-size:.7rem;font-weight:700;color:var(--terra);text-decoration:none;}
+  ol.rt a.vid:hover{text-decoration:underline;}
+  .rt-timer{display:flex;align-items:center;gap:.8rem;margin-top:.7rem;}
+  .rt-timer #rtClock{font-family:'Space Mono';font-size:1.25rem;color:var(--deep);}
+  .rt-note{font-size:.66rem;color:#a08a72;margin-top:.6rem;font-style:italic;}
+  .chips{display:flex;gap:.4rem;flex-wrap:wrap;margin:.5rem 0;}
+  .chips button{border:1.5px solid var(--sage);background:var(--cream);color:var(--deep);border-radius:99px;padding:.3rem .8rem;font-size:.7rem;cursor:pointer;font-family:'Space Grotesk';font-weight:600;}
+  .chips button.on{background:var(--deep);color:var(--cream);border-color:var(--deep);}
+  @media (max-width:700px){.pgl-stage{top:auto;bottom:1rem;transform:translateX(-50%);width:94vw;}.pgl-robot{width:34vw;}.pgl-bubble{max-width:92vw;text-align:center;}.pgl-actions{justify-content:center;}}
+  @media (prefers-reduced-motion:reduce){.pgr-all,.pgr-cap,.pgr-ant,.pgr-eye,.pgr-glow{animation:none!important;}}
+
   @media (max-width:960px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
@@ -143,6 +212,12 @@
         <a class="btn ghost" href="/dashboard" style="text-decoration:none;display:inline-flex;align-items:center;">📊 Dashboard</a>
       </div>
     </header>
+
+    <div class="popbanner" id="popBanner">
+      <div class="grow" id="popText"></div>
+      <button class="btn" id="popEnable">🔔 Turn on</button>
+      <button class="x" id="popClose" aria-label="Dismiss">✕</button>
+    </div>
 
     <div class="grid">
       <div class="card video-card">
@@ -179,10 +254,53 @@
           </div>
         </div>
 
+        <div class="card" id="coachCard">
+          <h3>Wellness coach <span class="mini" id="coachMini">streak</span></h3>
+          <div class="coach-top">
+            <div class="coach-robot" id="coachRobot"></div>
+            <div class="coach-stats">
+              <div class="crow"><span>Good-posture streak</span><b id="cStreak">00:00 / 30:00</b></div>
+              <div class="cbar"><i id="cBar"></i></div>
+              <div class="crow small"><span>Sitting (continuous)</span><b id="cSit">0 min</b></div>
+              <div class="crow small"><span>Breaks this session</span><b id="cBreaks">0</b></div>
+            </div>
+          </div>
+          <div class="coach-focus" id="cFocus"></div>
+          <div class="coach-actions">
+            <button class="btn" id="btnBreak">💆 Break now</button>
+            <button class="btn ghost" id="btnLib">🎬 Exercises &amp; videos</button>
+          </div>
+          <div class="coach-toggles">
+            <label><input type="checkbox" id="tgChair"> 🪑 Chair-friendly only</label>
+            <label><input type="checkbox" id="tgSound"> 🔔 Chime</label>
+            <label><input type="checkbox" id="tgVoice"> 🗣 Voice</label>
+          </div>
+          <div class="fact" id="cFact"></div>
+          <details class="coach-test">
+            <summary>Preview the pop-ups</summary>
+            <button class="btn ghost" id="btnPrevAlert">🚨 Posture alert robot</button>
+            <button class="btn ghost" id="btnPrevCare">🎉 Break reminder</button>
+          </details>
+        </div>
+
         <div class="card">
           <h3>Alert log <span class="mini" id="alertCount">0 total</span></h3>
           <div class="alerts" id="alerts"><div class="no-alerts">All clear — sit pretty 🌿</div></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- robot pop-up layer -->
+  <div class="pgl" id="pgLayer" aria-live="assertive">
+    <div class="pgl-wash"></div>
+    <div class="pgl-stage">
+      <div class="pgl-robot" id="pglRobot"></div>
+      <div class="pgl-bubble" role="dialog" aria-label="PostureGuard robot">
+        <div class="pgl-title" id="pglTitle"></div>
+        <div class="pgl-text" id="pglText"></div>
+        <div id="pglExtra"></div>
+        <div class="pgl-actions" id="pglActions"></div>
       </div>
     </div>
   </div>
@@ -225,91 +343,394 @@ let lastAlertLen=0, stopped=false;
 function fmtT(s){s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
 
 /* ============================================================
-   FLOATING "FIX YOUR POSTURE" WIDGET
-   Stays visible even when the user switches to a different tab.
-   Uses Chrome's Document Picture-in-Picture window (a real
-   always-on-top OS window) when available; falls back to a
-   plain system Notification on browsers that don't support it
-   (Firefox, Safari).
+   THE ROBOT  (one SVG, four moods: calm · alert · happy · stretch)
 ============================================================ */
-let pipWindow = null;
-let pipEls = null;
-let lastBadAlert = false;
-let lastNotifyAt = 0;
+const ROBOT_CSS=`.pgr{width:100%;height:auto;display:block;overflow:visible}
+.pgr-all{animation:pgrFloat 3s ease-in-out infinite}
+.pgr-eye{fill:#3fb8ff;transform-box:fill-box;transform-origin:center;animation:pgrBlink 4.2s infinite}
+.pgr-brow,.pgr-happyeye,.pgr-smile{display:none}
+.pgr-cap{animation:pgrBob 2.4s ease-in-out infinite}
+.pgr-ant{transform-box:fill-box;transform-origin:50% 100%;animation:pgrWob 1.8s ease-in-out infinite}
+.pgr-ant-r{animation-delay:-.9s}
+.pgr-arm{transform-box:fill-box;transform-origin:50% 8%;transition:transform .5s ease}
+.pgr-glow{animation:pgrGlow 2s ease-in-out infinite}
+.pgr-alert .pgr-all{animation:pgrShake .45s ease-in-out infinite}
+.pgr-alert .pgr-eye{fill:#ff5a3c}
+.pgr-alert .pgr-brow{display:block}
+.pgr-alert .pgr-mouth{display:none}
+.pgr-alert .pgr-arm-r{animation:pgrWave .5s ease-in-out infinite alternate}
+.pgr-alert .pgr-glow{fill:#ff5a3c}
+.pgr-happy .pgr-eye{display:none}
+.pgr-happy .pgr-happyeye,.pgr-happy .pgr-smile{display:block}
+.pgr-happy .pgr-mouth{display:none}
+.pgr-happy .pgr-arm-l{transform:rotate(35deg)}
+.pgr-happy .pgr-arm-r{transform:rotate(-35deg)}
+.pgr-stretch .pgr-arm-l{animation:pgrUpL 2.6s ease-in-out infinite}
+.pgr-stretch .pgr-arm-r{animation:pgrUpR 2.6s ease-in-out infinite}
+.pgr-stretch .pgr-eye{fill:#6be0a8}
+.pgr-stretch .pgr-glow{fill:#6be0a8}
+@keyframes pgrFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes pgrShake{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes pgrBlink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes pgrBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes pgrWob{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+@keyframes pgrGlow{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes pgrWave{from{transform:rotate(-135deg)}to{transform:rotate(-170deg)}}
+@keyframes pgrUpL{0%,100%{transform:rotate(150deg)}50%{transform:rotate(172deg)}}
+@keyframes pgrUpR{0%,100%{transform:rotate(-150deg)}50%{transform:rotate(-172deg)}}`;
+(function(){const st=document.createElement('style');st.textContent=ROBOT_CSS;document.head.appendChild(st);})();
 
-function buildPipContent(doc){
-  doc.body.innerHTML = `
-    <style>
-      :root{color-scheme:light dark;}
-      body{margin:0;font-family:'Space Grotesk',system-ui,sans-serif;
-        background:#faf2e4;display:flex;flex-direction:column;align-items:center;
-        justify-content:center;height:100vh;gap:.5rem;text-align:center;overflow:hidden;}
-      .mascot{font-size:3.4rem;transition:transform .25s ease;}
-      .mascot.bad{font-size:4.6rem;animation:shake .35s ease-in-out infinite;}
-      @keyframes shake{0%,100%{transform:rotate(-8deg);}50%{transform:rotate(8deg);}}
-      .msg{font-weight:700;font-size:1.05rem;color:#33271e;padding:0 .8rem;}
-      .msg.good{color:#3a8f5c;} .msg.moderate{color:#c0662c;} .msg.bad{color:#c0392b;}
-      .tip{font-size:.8rem;color:#7d6a58;padding:0 1rem;}
-    </style>
-    <div class="mascot" id="pipMascot">🧘</div>
-    <div class="msg good" id="pipMsg">Good posture</div>
-    <div class="tip" id="pipTip"></div>
-  `;
-  return {
-    mascot: doc.getElementById('pipMascot'),
-    msg: doc.getElementById('pipMsg'),
-    tip: doc.getElementById('pipTip'),
+function robotSVG(u){return `<svg class="pgr pgr-calm" viewBox="0 0 200 250" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs>
+ <linearGradient id="hd${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfbff"/><stop offset="1" stop-color="#cdbff2"/></linearGradient>
+ <linearGradient id="bd${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3ecfd"/><stop offset="1" stop-color="#b7a4e9"/></linearGradient>
+</defs>
+<ellipse cx="100" cy="242" rx="48" ry="6" fill="rgba(80,50,30,.16)"/>
+<g class="pgr-all">
+ <g class="pgr-ant pgr-ant-l"><line x1="68" y1="62" x2="55" y2="36" stroke="#a99ad9" stroke-width="4" stroke-linecap="round"/><circle cx="54" cy="31" r="7.5" fill="#ff5d8f"/></g>
+ <g class="pgr-ant pgr-ant-r"><line x1="132" y1="62" x2="145" y2="36" stroke="#a99ad9" stroke-width="4" stroke-linecap="round"/><circle cx="146" cy="31" r="7.5" fill="#ff5d8f"/></g>
+ <rect class="pgr-cap" x="84" y="42" width="32" height="10" rx="5" fill="#f3bf3c"/>
+ <rect x="26" y="92" width="15" height="36" rx="7.5" fill="#e8456b"/><rect x="159" y="92" width="15" height="36" rx="7.5" fill="#e8456b"/>
+ <rect class="pgr-arm pgr-arm-l" x="40" y="170" width="15" height="48" rx="7.5" fill="#bcaaea"/>
+ <rect class="pgr-arm pgr-arm-r" x="145" y="170" width="15" height="48" rx="7.5" fill="#bcaaea"/>
+ <rect x="70" y="222" width="24" height="13" rx="6.5" fill="#a893e0"/><rect x="106" y="222" width="24" height="13" rx="6.5" fill="#a893e0"/>
+ <rect x="62" y="160" width="76" height="66" rx="28" fill="url(#bd${u})" stroke="#b6a3e6" stroke-width="2"/>
+ <circle class="pgr-glow" cx="100" cy="192" r="9" fill="#7fd6ff"/>
+ <rect x="40" y="56" width="120" height="106" rx="42" fill="url(#hd${u})" stroke="#b6a3e6" stroke-width="2.5"/>
+ <rect x="55" y="80" width="90" height="54" rx="25" fill="#221c3d"/>
+ <rect class="pgr-eye" x="71" y="94" width="21" height="26" rx="9"/><rect class="pgr-eye" x="108" y="94" width="21" height="26" rx="9"/>
+ <path class="pgr-happyeye" d="M71 112 Q81.5 92 92 112" fill="none" stroke="#7fe0ff" stroke-width="6" stroke-linecap="round"/>
+ <path class="pgr-happyeye" d="M108 112 Q118.5 92 129 112" fill="none" stroke="#7fe0ff" stroke-width="6" stroke-linecap="round"/>
+ <path class="pgr-brow" d="M68 88 L94 97" stroke="#ff8a6d" stroke-width="5" stroke-linecap="round"/>
+ <path class="pgr-brow" d="M132 88 L106 97" stroke="#ff8a6d" stroke-width="5" stroke-linecap="round"/>
+ <rect class="pgr-mouth" x="88" y="144" width="24" height="8" rx="4" fill="#7d6bd0"/>
+ <path class="pgr-smile" d="M86 144 Q100 158 114 144" fill="none" stroke="#7d6bd0" stroke-width="5" stroke-linecap="round"/>
+</g></svg>`;}
+function setMood(host,mood){const svg=host&&host.querySelector('svg');if(svg)svg.setAttribute('class','pgr pgr-'+mood);}
+
+/* ============================================================
+   SETTINGS (remembered in this browser) + SOUND + VOICE
+============================================================ */
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+let chairMode=store.get('pg_chair','0')==='1';
+let soundOn  =store.get('pg_sound','1')==='1';
+let voiceOn  =store.get('pg_voice','0')==='1';
+
+let audioCtx=null;
+function unlockAudio(){try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();}catch(e){}}
+['pointerdown','keydown'].forEach(ev=>addEventListener(ev,unlockAudio,{passive:true}));
+function tone(f,t0,d){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=f;
+  g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(0.18,t0+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+d);
+  o.connect(g);g.connect(audioCtx.destination);o.start(t0);o.stop(t0+d+0.05);}
+function chime(kind){
+  if(!soundOn||!audioCtx)return;const t=audioCtx.currentTime;
+  (kind==='care'?[523.25,659.25,783.99]:kind==='done'?[659.25,880]:[]).forEach((f,i)=>tone(f,t+i*0.16,0.5));}
+function speak(text){if(!voiceOn||!('speechSynthesis' in window))return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=1;u.pitch=1.1;speechSynthesis.speak(u);}catch(e){}}
+
+/* ============================================================
+   WELLNESS DATA  (exercise ideas + research facts)
+============================================================ */
+const EXERCISES=[
+ {id:'chin',t:`Chin tucks`,how:`Sit tall, eyes level. Glide your head straight back (think "double chin") until you feel a gentle stretch at the back of the neck.`,dose:`hold ~10 s · 3–5 reps`,tags:['neck'],chair:1,stand:1,q:`chin tucks exercise desk workers`},
+ {id:'neckside',t:`Ear-to-shoulder stretch`,how:`Drop one ear toward the same shoulder, keep the other shoulder relaxed and down. No pulling.`,dose:`15–20 s each side`,tags:['neck','shoulder'],chair:1,stand:1,q:`seated neck side stretch office`},
+ {id:'squeeze',t:`Shoulder-blade squeezes`,how:`Shrug up toward your ears, let them drop, then squeeze your shoulder blades together and back.`,dose:`hold 5 s · 10 reps`,tags:['shoulder','back'],chair:1,stand:1,q:`shoulder blade squeeze desk exercise`},
+ {id:'thoracic',t:`Upper-back extension`,how:`Hands behind your neck, lift your elbows and gently look up, opening the chest over the chair back.`,dose:`10 slow reps`,tags:['back'],chair:1,stand:1,q:`seated thoracic extension exercise`},
+ {id:'twist',t:`Seated spinal twist`,how:`Sit tall, turn from your ribs (not just your neck) holding the chair back, then switch sides.`,dose:`20 s each side`,tags:['back'],chair:1,stand:1,q:`seated spinal twist stretch office`},
+ {id:'rolls',t:`Shoulder rolls`,how:`Big slow circles backward, then forward. Keep both shoulders level.`,dose:`10 each direction`,tags:['shoulder'],chair:1,stand:1,q:`shoulder rolls desk exercise`},
+ {id:'wrist',t:`Wrist & finger stretch`,how:`Arm forward, palm up then down; gently press the fingers back with your other hand.`,dose:`3–5 s · 3 reps each way`,tags:['wrist'],chair:1,stand:1,q:`desk wrist stretches`},
+ {id:'ankle',t:`Ankle pumps & knee lifts`,how:`Seated: point and flex your feet, then lift each knee a few times to get the blood moving.`,dose:`20 pumps · 10 lifts`,tags:['legs'],chair:1,stand:0,q:`seated ankle pumps leg exercises desk`},
+ {id:'walk',t:`Walk it out`,how:`Stroll to a window, refill your water bottle or take a few stairs.`,dose:`2–3 min`,tags:['legs'],chair:0,stand:1,q:`quick walking break at work`},
+ {id:'chest',t:`Doorway chest stretch`,how:`Forearm on a door frame at about 90°, gently turn your body away until the chest opens.`,dose:`30 s each side`,tags:['shoulder','back'],chair:0,stand:1,q:`doorway chest stretch`},
+ {id:'calf',t:`Calf raises`,how:`Stand holding the desk, rise onto your toes and lower slowly.`,dose:`15 reps`,tags:['legs'],chair:0,stand:1,q:`calf raises at desk`},
+ {id:'standback',t:`Standing back extension`,how:`Hands on your hips, gently lean back a little and breathe. Stop if it pinches.`,dose:`5 slow reps`,tags:['back'],chair:0,stand:1,q:`standing back extension office stretch`},
+ {id:'eyes',t:`20-20-20 eye break`,how:`Look at something about 20 ft (6 m) away for 20 seconds and blink slowly.`,dose:`20 s`,tags:['eyes'],chair:1,stand:1,q:`20-20-20 rule eye break`}
+];
+const FOCUS_TAG={head_forward:'neck',neck_angle_deg:'neck',shoulder_asym:'shoulder',spinal_offset:'back',torso_lean_deg:'back'};
+const FOCUS_LABEL={neck:'forward head / neck',shoulder:'uneven shoulders',back:'back & torso lean'};
+const FOCUS_TIP={neck:'Chin tucks and neck stretches help most.',shoulder:'Shoulder-blade squeezes and rolls help most.',back:'Upper-back extensions and gentle twists help most.'};
+const FACTS=[
+ [`In a study of nearly 8,000 adults, the health risks of long sitting shrank when people moved at least every 30 minutes.`,`Annals of Internal Medicine, 2017`],
+ [`Two hours of computer work raised discomfort (mostly low back) and lowered focus and mood in one lab study.`,`Baker et al., 2018`],
+ [`Active breaks (stretching, muscle activation) reduced pain more than passive breaks.`,`Vitoulas et al., 2022`],
+ [`A common rule of thumb: 30 min of work then a 3–5 min break, or 40–60 min then 10–15 min.`,`Ergonomics review`],
+ [`In a trial of 198 office workers, just 2 minutes of simple exercise a day cut neck & shoulder pain over 10 weeks.`,`Andersen et al.`],
+ [`There is no single perfect posture. Changing position often matters more than holding one "perfect" pose.`,`Savonia physio review`],
+ [`Standing all day isn't a fix either. Research suggests breaking up long standing after about 40 minutes.`,`Sit-stand desk evidence review`],
+ [`Micro-breaks of 20–30 seconds every 20–30 minutes can ease tension.`,`Ergonomic guidance`],
+ [`20-20-20 for your eyes: every 20 minutes, look 20 ft away for 20 seconds.`,`Common eye-care guidance`]
+];
+const ytUrl=q=>`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+
+let lastState=null, careActive=false, carePreview=false, libOpen=false, careCooldownUntil=0;
+let routineTimer=null, careTimeout=null, routineStarted=false;
+
+function pickRoutine(chair){
+  const pool=EXERCISES.filter(e=>chair?e.chair:e.stand);
+  const tag=FOCUS_TAG[lastState&&lastState.focus_metric]||null;
+  const f=tag?pool.filter(e=>e.tags.includes(tag)):[];
+  const legs=pool.filter(e=>e.tags.includes('legs'));
+  const eyes=pool.filter(e=>e.id==='eyes');
+  const rest=pool.filter(e=>!f.includes(e)&&!legs.includes(e)&&!eyes.includes(e));
+  const seed=(lastState&&lastState.breaks_taken)||0;
+  const rot=a=>a.length?a.slice(seed%a.length).concat(a.slice(0,seed%a.length)):a;
+  const out=[...rot(f).slice(0,2),...rot(legs).slice(0,1),...rot(rest).slice(0,f.length?1:2),...eyes];
+  return out.filter((e,i)=>out.indexOf(e)===i).slice(0,4);
+}
+function careTip(){const e=pickRoutine(chairMode)[0];return e?`Try: ${e.t} — ${e.dose}`:'Stand up, stretch, breathe.';}
+
+/* ============================================================
+   THE POP-UP LAYER  (robot slides in from the left)
+============================================================ */
+const pgl=$('pgLayer'); $('pglRobot').innerHTML=robotSVG('L');
+$('coachRobot').innerHTML=robotSVG('C');
+let pglTimer=null, previewTimer=null;
+
+function pglShow({mode,mood,title,text,html,actions}){
+  clearTimeout(pglTimer);
+  pgl.classList.remove('leaving','alert','care'); pgl.classList.add(mode);
+  setMood($('pglRobot'),mood);
+  $('pglTitle').innerHTML=title||''; $('pglText').innerHTML=text||''; $('pglExtra').innerHTML=html||'';
+  const box=$('pglActions'); box.innerHTML='';
+  (actions||[]).forEach(a=>{const b=document.createElement('button');b.className='btn'+(a.ghost?' ghost':'');b.textContent=a.label;b.onclick=a.onClick;box.appendChild(b);});
+  void pgl.offsetWidth; pgl.classList.add('on');
+}
+function pglHide(){
+  if(!pgl.classList.contains('on'))return;
+  pgl.classList.add('leaving'); clearTimeout(pglTimer);
+  pglTimer=setTimeout(()=>pgl.classList.remove('on','leaving'),700);
+}
+
+/* ---------- 1) FIX YOUR POSTURE robot ---------- */
+let alertShowing=false, alertDismissed=false, alertShownAt=0, previewing=false;
+function showAlert(tip,preview){
+  alertShowing=true; alertShownAt=Date.now(); previewing=!!preview;
+  const close=()=>{alertDismissed=true;alertShowing=false;previewing=false;clearTimeout(previewTimer);pglHide();};
+  pglShow({mode:'alert',mood:'alert',title:`⚠ Fix your posture!`,
+    text:tip||`Sit tall — ears over shoulders, shoulders relaxed.`,
+    actions:[{label:`✓ Got it`,onClick:close},{label:`😴 Snooze 5m`,ghost:true,onClick:()=>{fetch('/api/snooze',{method:'POST'});close();}}]});
+  speak('Fix your posture');
+  if(preview){clearTimeout(previewTimer);previewTimer=setTimeout(()=>{if(previewing)close();},7000);}
+}
+function handleAlertRobot(s){
+  if(previewing)return;
+  const a=s.alerts&&s.alerts[s.alerts.length-1];
+  if(s.bad_alert){
+    if(!alertShowing&&!alertDismissed&&!careActive&&!libOpen)showAlert(a&&a.tip);
+    else if(alertShowing&&a&&a.tip)$('pglText').textContent=a.tip;
+  }else{
+    alertDismissed=false;
+    if(alertShowing&&Date.now()-alertShownAt>3000){
+      alertShowing=false; setMood($('pglRobot'),'happy');
+      $('pglTitle').textContent='Nice — posture fixed! 🌿'; $('pglText').textContent='Keep it up.'; $('pglActions').innerHTML='';
+      clearTimeout(pglTimer); pglTimer=setTimeout(pglHide,1600);
+    }
+  }
+}
+
+/* ---------- 2) WELLNESS COACH robot ---------- */
+function ack(payload){
+  if(carePreview)return Promise.resolve();
+  careCooldownUntil=Date.now()+5000;
+  return fetch('/api/wellness/ack',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(()=>{});
+}
+function careEnd(){careActive=false;carePreview=false;routineStarted=false;clearInterval(routineTimer);clearTimeout(careTimeout);}
+function careLater(min){ack({action:'later',minutes:min});careEnd();pglHide();}
+function careDone(kind){
+  ack({action:'done',kind}); careEnd(); chime('done');
+  setMood($('pglRobot'),'happy'); $('pglTitle').textContent='Great job! 🎉';
+  $('pglText').textContent='Your good-posture streak starts fresh. See you in a while.'; $('pglExtra').innerHTML=''; $('pglActions').innerHTML='';
+  clearTimeout(pglTimer); pglTimer=setTimeout(pglHide,2400);
+}
+function showCare(manual,preview){
+  careActive=true; carePreview=!!preview; routineStarted=false;
+  const after=Math.round(((lastState&&lastState.wellness_after_s)||1800)/60);
+  const mins=preview?after:Math.max(1,Math.round(((lastState&&lastState.good_dur)||0)/60));
+  const acts=[];
+  if(!chairMode)acts.push({label:`🚶 I can stand / walk`,onClick:()=>startRoutine(false)});
+  acts.push({label:`🪑 Stay seated`,onClick:()=>startRoutine(true)});
+  acts.push({label:`⏰ In 5 min`,ghost:true,onClick:()=>careLater(5)});
+  pglShow({mode:'care',mood:'stretch',
+    title:manual?`💆 Quick reset`:`🎉 ${mins} min of great posture!`,
+    text:manual?`Two minutes of movement beats any "perfect" posture. Pick what suits you right now:`
+               :`Lovely work — but even good posture needs movement. After about 30 minutes of continuous sitting, a short light-activity break is a useful target. Pick what suits you today:`,
+    actions:acts});
+  if(!manual){chime('care');speak('Great posture. Time for a short movement break.');notifyCare();
+    clearTimeout(careTimeout);careTimeout=setTimeout(()=>{if(careActive&&!routineStarted)careLater(5);},120000);}
+}
+function startRoutine(chair){
+  routineStarted=true; clearTimeout(careTimeout);
+  const list=pickRoutine(chair), tag=FOCUS_TAG[lastState&&lastState.focus_metric];
+  const intro=tag?`Your data this session points to <b>${FOCUS_LABEL[tag]}</b>, so this routine leans on that.`:`A balanced two-minute routine.`;
+  const html=`<div class="rt-intro">${intro}</div><ol class="rt">`+list.map(e=>
+    `<li><b>${e.t}</b><span class="dose">${e.dose}</span><div class="how">${e.how}</div><a class="vid" href="${ytUrl(e.q)}" target="_blank" rel="noopener">▶ watch a demo</a></li>`).join('')+
+    `</ol><div class="rt-timer"><span id="rtClock">2:00</span><button class="btn ghost" id="rtStart">▶ Start 2:00 timer</button></div>
+     <div class="rt-note">Move gently and stop if anything hurts. General wellness tips, not medical advice.</div>`;
+  pglShow({mode:'care',mood:'stretch',title:chair?`🪑 Chair-friendly reset`:`🚶 Stand-up reset`,text:'',html,
+    actions:[{label:`✓ Done`,onClick:()=>careDone(chair?'chair':'walk')},{label:`⏰ Later`,ghost:true,onClick:()=>careLater(5)}]});
+  let left=120;
+  $('rtStart').onclick=()=>{
+    clearInterval(routineTimer); left=120; $('rtStart').textContent='⏱ running…';
+    routineTimer=setInterval(()=>{left--;const c=$('rtClock');if(c)c.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');
+      if(left<=0){clearInterval(routineTimer);chime('done');if(c)c.textContent='Nice! ✓';}},1000);
   };
 }
-
-async function openFloatingWidget(){
-  if ('documentPictureInPicture' in window){
-    try{
-      pipWindow = await documentPictureInPicture.requestWindow({width:260,height:180});
-      pipEls = buildPipContent(pipWindow.document);
-      pipWindow.addEventListener('pagehide', ()=>{ pipWindow=null; pipEls=null; });
-      $('btnFloat').textContent='📌 Floating…';
-      return;
-    }catch(e){ console.warn('PiP unavailable, falling back to notifications', e); }
-  }
-  if ('Notification' in window){
-    const perm = await Notification.requestPermission();
-    if (perm === 'granted'){
-      $('btnFloat').textContent='🔔 Alerts on';
-      new Notification('PostureGuard', {body:'You\'ll get a notification if your posture slips while you\'re on another tab.'});
-    }
+function notifyCare(){
+  if(document.hidden&&!pipWindow&&'Notification' in window&&Notification.permission==='granted'){
+    const n=new Notification('🎉 Great posture — time to move!',{body:'A 2-minute stretch or walk keeps you comfortable. Open PostureGuard for a routine.',tag:'pg-care'});
+    n.onclick=()=>{window.focus();n.close();};
   }
 }
-$('btnFloat').addEventListener('click', openFloatingWidget);
+function handleWellness(s){
+  if(!s.wellness_due||careActive||libOpen||previewing||s.snoozed||s.bad_alert||alertShowing||Date.now()<careCooldownUntil)return;
+  showCare(false,false);
+}
+
+/* ---------- 3) exercise library ---------- */
+let libFilter='all';
+function openLibrary(){
+  libOpen=true;
+  const list=EXERCISES.filter(e=>libFilter==='all'||(libFilter==='chair'?e.chair:e.stand));
+  const chips=[['all','All'],['chair','🪑 Chair-friendly'],['stand','🚶 Standing']].map(([k,l])=>`<button data-f="${k}" class="${libFilter===k?'on':''}">${l}</button>`).join('');
+  const html=`<div class="chips">${chips}</div><ol class="rt">`+list.map(e=>
+    `<li><b>${e.t}</b><span class="dose">${e.dose}</span><div class="how">${e.how}</div><a class="vid" href="${ytUrl(e.q)}" target="_blank" rel="noopener">▶ watch a demo</a></li>`).join('')+
+    `</ol><div class="rt-note">Move gently and stop if anything hurts. General wellness tips, not medical advice.</div>`;
+  pglShow({mode:'care',mood:'happy',title:`🎬 Desk-friendly exercises`,text:`Tap a demo to open a video search. Not everyone can walk — the chair-friendly list needs no standing.`,html,
+    actions:[{label:`✕ Close`,onClick:()=>{libOpen=false;pglHide();}}]});
+  $('pglExtra').querySelectorAll('.chips button').forEach(b=>b.onclick=()=>{libFilter=b.dataset.f;openLibrary();});
+}
+
+/* ============================================================
+   FLOATING ROBOT WINDOW  — shows on top of OTHER TABS / apps
+   Chrome/Edge: Document Picture-in-Picture (always-on-top window).
+   Other browsers: system notifications.
+============================================================ */
+let pipWindow=null, pipEls=null, pipState=null, lastAlertT=null, previewPip=null, previewPipTimer=null;
+let lastBadAlert=false, lastNotifyAt=0;
+
+function buildPipContent(doc){
+  doc.body.innerHTML=`<style>${ROBOT_CSS}
+    html,body{margin:0;height:100%}
+    body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#faf2e4;color:#33271e;overflow:hidden}
+    .pip{height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;text-align:center;padding:.5rem .8rem;transition:background .4s}
+    .pip.alert{background:#ffe6e0}.pip.mod{background:#fff1dc}.pip.care{background:#e9f4e2}
+    .pip-robot{width:118px}
+    .pip-robot.enter{animation:pipIn .75s cubic-bezier(.34,1.5,.5,1)}
+    @keyframes pipIn{from{transform:translateX(-150%) rotate(-16deg);opacity:0}to{transform:none;opacity:1}}
+    .pip-msg{font-weight:800;font-size:1.02rem}
+    .pip-msg.good{color:#3a8f5c}.pip-msg.moderate{color:#c0662c}.pip-msg.bad{color:#c0392b}
+    .pip-tip{font-size:.78rem;color:#7d6a58;line-height:1.35}
+    .pip-actions{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center;margin-top:.2rem}
+    .pip-actions button{border:none;cursor:pointer;background:#7c4322;color:#faf2e4;border-radius:10px;padding:.42rem .7rem;font-size:.72rem;font-weight:700}
+    .pip-actions button.g{background:#fffaef;color:#7c4322;border:1.5px solid #e3cba4}
+  </style>
+  <div class="pip" id="pipRoot"><div class="pip-robot" id="pipRobot">${robotSVG('P')}</div>
+   <div class="pip-msg good" id="pipMsg">Good posture</div><div class="pip-tip" id="pipTip"></div><div class="pip-actions" id="pipActions"></div></div>`;
+  return{doc,root:doc.getElementById('pipRoot'),robot:doc.getElementById('pipRobot'),msg:doc.getElementById('pipMsg'),tip:doc.getElementById('pipTip'),actions:doc.getElementById('pipActions')};
+}
+function pipBtn(label,fn,ghost){const b=pipEls.doc.createElement('button');b.textContent=label;if(ghost)b.className='g';b.onclick=fn;pipEls.actions.appendChild(b);}
+function applyPipState(state,a){
+  const e=pipEls;if(!e)return;
+  const cfg={
+    idle :{mood:'calm',  cls:'',      msg:'Good posture',                    mc:'good',    tip:''},
+    mod  :{mood:'calm',  cls:'mod',   msg:'Posture drifting…',               mc:'moderate',tip:'Sit a little taller'},
+    alert:{mood:'alert', cls:'alert', msg:'FIX YOUR POSTURE!',               mc:'bad',     tip:(a&&a.tip)||'Ears over shoulders, shoulders relaxed'},
+    care :{mood:'stretch',cls:'care', msg:'Great posture — time to move!',   mc:'good',    tip:careTip()}
+  }[state];
+  e.root.className='pip '+cfg.cls; setMood(e.robot,cfg.mood);
+  e.msg.className='pip-msg '+cfg.mc; e.msg.textContent=cfg.msg; e.tip.textContent=cfg.tip; e.actions.innerHTML='';
+  if(state==='care'){pipBtn('✓ I moved',()=>careDone(chairMode?'chair':'walk'));pipBtn('⏰ 5 min',()=>careLater(5),true);}
+  if(state==='alert'){pipBtn('😴 Snooze 5m',()=>fetch('/api/snooze',{method:'POST'}),true);}
+  if(state==='alert'||state==='care'){e.robot.classList.remove('enter');void e.robot.offsetWidth;e.robot.classList.add('enter');}
+}
+function refreshBanner(){
+  const b=$('popBanner'),pipOk='documentPictureInPicture' in window;
+  const notifOk='Notification' in window&&Notification.permission==='granted';
+  let dismissed=false;try{dismissed=sessionStorage.getItem('pg_pop_dismiss')==='1';}catch(e){}
+  const done=pipWindow||(!pipOk&&notifOk);
+  b.style.display=(done||dismissed)?'none':'flex';
+  $('popText').innerHTML=pipOk
+    ?`<b>Working in another tab?</b> Turn on the floating robot once — the small always-on-top robot will pop up for posture alerts and break reminders.`
+    :`<b>Working in another tab?</b> Turn on notifications so the robot can still reach you.`;
+}
+async function openFloatingWidget(){
+  unlockAudio();
+  if('Notification' in window&&Notification.permission==='default'){try{Notification.requestPermission().then(refreshBanner);}catch(e){}}
+  if('documentPictureInPicture' in window){
+    try{
+      if(pipWindow){try{pipWindow.focus();}catch(e){}return;}
+      pipWindow=await documentPictureInPicture.requestWindow({width:300,height:290});
+      pipEls=buildPipContent(pipWindow.document); pipState=null;
+      pipWindow.addEventListener('pagehide',()=>{pipWindow=null;pipEls=null;pipState=null;$('btnFloat').textContent='📌 Float on top';refreshBanner();});
+      $('btnFloat').textContent='📌 Floating…'; refreshBanner();
+      if(lastState)updateFloatingWidget(lastState);
+      return;
+    }catch(e){console.warn('PiP unavailable, falling back to notifications',e);}
+  }
+  if('Notification' in window){
+    const perm=await Notification.requestPermission();
+    if(perm==='granted'){$('btnFloat').textContent='🔔 Alerts on';new Notification('PostureGuard',{body:`You'll get a notification if your posture slips while you're on another tab.`});}
+  }
+  refreshBanner();
+}
+$('btnFloat').addEventListener('click',openFloatingWidget);
+$('popEnable').addEventListener('click',openFloatingWidget);
+$('popClose').addEventListener('click',()=>{try{sessionStorage.setItem('pg_pop_dismiss','1');}catch(e){}refreshBanner();});
+refreshBanner();
 
 function updateFloatingWidget(s){
-  if (pipEls){
-    const bad = !!s.bad_alert, mod = !s.bad_alert && !!s.mod_alert;
-    pipEls.mascot.textContent = bad ? '🚨' : mod ? '🙆' : '🧘';
-    pipEls.mascot.className = 'mascot' + (bad ? ' bad' : '');
-    pipEls.msg.className = 'msg ' + (bad ? 'bad' : mod ? 'moderate' : 'good');
-    pipEls.msg.textContent = bad ? 'FIX YOUR POSTURE!' : mod ? 'Posture drifting…' : 'Good posture';
-    const a = s.alerts && s.alerts[s.alerts.length-1];
-    pipEls.tip.textContent = bad && a ? a.tip : '';
-
-    if (bad && !lastBadAlert){
-      try{ pipWindow.resizeTo(380, 280); }catch(e){}
-      try{ pipWindow.focus(); }catch(e){}
-    } else if (!bad && lastBadAlert){
-      try{ pipWindow.resizeTo(260, 180); }catch(e){}
-    }
+  const bad=!!s.bad_alert, mod=!bad&&!!s.mod_alert;
+  const a=s.alerts&&s.alerts[s.alerts.length-1];
+  if(pipEls){
+    const state=previewPip||(careActive?'care':bad?'alert':mod?'mod':'idle');
+    const nudge=state==='alert'&&a&&a.t!==lastAlertT;
+    if(state!==pipState||nudge){applyPipState(state,a);pipState=state;}
   }
-
-  const nowBad = !!s.bad_alert;
-  if (nowBad && !lastBadAlert && document.hidden && !pipWindow &&
-      'Notification' in window && Notification.permission === 'granted' &&
-      Date.now() - lastNotifyAt > 30000){
-    const a = s.alerts && s.alerts[s.alerts.length-1];
-    new Notification('⚠ Fix your posture!', {body: (a&&a.tip) || 'Sit up straight.'});
-    lastNotifyAt = Date.now();
+  if(a)lastAlertT=a.t;
+  if(bad&&!lastBadAlert&&document.hidden&&!pipWindow&&'Notification' in window&&Notification.permission==='granted'&&Date.now()-lastNotifyAt>30000){
+    const n=new Notification('⚠ Fix your posture!',{body:(a&&a.tip)||'Sit tall — ears over shoulders.',tag:'pg-alert',requireInteraction:false});
+    n.onclick=()=>{window.focus();n.close();};
+    lastNotifyAt=Date.now();
   }
-  lastBadAlert = nowBad;
+  lastBadAlert=bad;
 }
+
+/* ============================================================
+   COACH CARD (streak, focus, facts, toggles, previews)
+============================================================ */
+function updateCoach(s){
+  const after=s.wellness_after_s||1800,g=s.good_dur||0;
+  $('cStreak').textContent=fmtT(g)+' / '+fmtT(after);
+  $('cBar').style.width=Math.min(100,g/after*100)+'%';
+  $('cSit').textContent=Math.floor((s.sit_dur||0)/60)+' min';
+  $('cBreaks').textContent=s.breaks_taken||0;
+  const f=FOCUS_TAG[s.focus_metric];
+  $('cFocus').innerHTML=f?`🎯 Your focus today: <b>${FOCUS_LABEL[f]}</b>. ${FOCUS_TIP[f]}`:`🎯 Keep going — I'm learning where you need the most help.`;
+  setMood($('coachRobot'),s.bad_alert?'alert':(g>after*0.8?'stretch':'calm'));
+  $('coachMini').textContent=s.wellness_due?'break due!':'streak';
+}
+let factI=Math.floor(Math.random()*FACTS.length);
+function showFact(){const [t,src]=FACTS[factI%FACTS.length];$('cFact').innerHTML=`📚 ${t}<span class="src">${src}</span>`;factI++;}
+showFact(); setInterval(showFact,20000);
+
+$('tgChair').checked=chairMode;$('tgSound').checked=soundOn;$('tgVoice').checked=voiceOn;
+$('tgChair').onchange=e=>{chairMode=e.target.checked;store.set('pg_chair',chairMode?'1':'0');pipState=null;};
+$('tgSound').onchange=e=>{soundOn=e.target.checked;store.set('pg_sound',soundOn?'1':'0');unlockAudio();if(soundOn)chime('done');};
+$('tgVoice').onchange=e=>{voiceOn=e.target.checked;store.set('pg_voice',voiceOn?'1':'0');if(voiceOn)speak('Voice reminders on');};
+$('btnBreak').onclick=()=>{unlockAudio();if(!careActive&&!alertShowing){libOpen=false;showCare(true,false);}};
+$('btnLib').onclick=()=>{unlockAudio();if(!careActive)openLibrary();};
+$('btnPrevAlert').onclick=()=>{
+  unlockAudio(); if(careActive||libOpen)return;
+  showAlert('Tuck your chin back — ears over shoulders',true);
+  previewPip='alert'; pipState=null; if(lastState)updateFloatingWidget(lastState);
+  clearTimeout(previewPipTimer); previewPipTimer=setTimeout(()=>{previewPip=null;pipState=null;},7000);
+};
+$('btnPrevCare').onclick=()=>{
+  unlockAudio(); if(careActive||alertShowing)return; libOpen=false;
+  showCare(false,true); chime('care');
+  previewPip='care'; pipState=null; if(lastState)updateFloatingWidget(lastState);
+  clearTimeout(previewPipTimer); previewPipTimer=setTimeout(()=>{previewPip=null;pipState=null;},9000);
+};
 
 async function tick(){
   if(stopped)return;
@@ -372,6 +793,10 @@ async function tick(){
 
     if(!s.running&&s.summary)showSummary(s.summary);
 
+    lastState=s;
+    updateCoach(s);
+    handleAlertRobot(s);
+    handleWellness(s);
     updateFloatingWidget(s);
   }catch(e){/* server starting up — retry next poll */}
 }
@@ -380,13 +805,14 @@ function showSummary(sum){
   if(stopped)return;stopped=true;
   $('feed').src=''; $('modeSub').textContent='SESSION COMPLETE';
   if(!sum)return;
-  const{good_pct:g=0,moderate_pct:m=0,bad_pct:b=0,duration_s:d=0,total_alerts:a=0}=sum;
+  const{good_pct:g=0,moderate_pct:m=0,bad_pct:b=0,duration_s:d=0,total_alerts:a=0,breaks_taken:br=0}=sum;
+  careEnd();alertShowing=false;previewing=false;libOpen=false;pglHide();
   $('sumFace').textContent=b<15?'🏆':b<35?'🌿':'💪';
   $('sumTitle').textContent=b<15?'Crushing it!':b<35?'Solid session':'Room to grow';
   $('sumDur').textContent=`${fmtT(d)} · ${a} alert${a===1?'':'s'}`;
   $('sg').style.width=g+'%';$('sm').style.width=m+'%';$('sb').style.width=b+'%';
   $('lg').textContent=`good ${g}%`;$('lm').textContent=`moderate ${m}%`;$('lb').textContent=`bad ${b}%`;
-  $('sumAlerts').textContent=a?`${a} gentle nudge${a===1?'':'s'} along the way`:'Not a single alert — textbook. 📖';
+  $('sumAlerts').textContent=(a?`${a} gentle nudge${a===1?'':'s'} along the way`:'Not a single alert — textbook. 📖')+(br?` · ${br} movement break${br===1?'':'s'} 💆`:'');
   $('summary').classList.add('open');
 }
 
@@ -394,22 +820,19 @@ $('btnSnooze').onclick=()=>fetch('/api/snooze',{method:'POST'});
 $('btnStop').onclick=async()=>{
   const r=await (await fetch('/api/stop',{method:'POST'})).json();
   if(pipWindow){ pipWindow.close(); pipWindow=null; pipEls=null; }
+  careEnd();alertShowing=false;previewing=false;libOpen=false;pglHide();
   if(r&&r.summary)showSummary(r.summary);
 };
 
-// Detection runs on the server, so it continues when this tab is in the background.
-// Browsers throttle setInterval in hidden tabs, so drive polling from a Web Worker
-// (not throttled) so bad-posture notifications still arrive on time.
-(function(){
-  let ok=false;
-  try{
-    const w=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},500)'],{type:'text/javascript'})));
-    w.onmessage=tick; ok=true;
-  }catch(e){}
-  if(!ok) setInterval(tick,500);
-})();
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) tick(); });
-tick();
+/* Background tabs throttle setInterval (down to once a minute after ~5 min hidden), which delayed
+   pop-ups. A Web Worker's timer is not throttled that way, so it drives the polling instead. */
+let ticking=false;
+async function safeTick(){if(ticking)return;ticking=true;try{await tick();}finally{ticking=false;}}
+try{
+  const w=new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},500)'],{type:'text/javascript'})));
+  w.onmessage=safeTick;
+}catch(e){setInterval(safeTick,500);}
+safeTick();
 </script>
 </body>
 </html>
